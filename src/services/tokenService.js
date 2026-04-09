@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { env } from '../config/env.js'
 import { authRepository } from '../repositories/authRepository.js'
-import { blacklistRepository } from '../repositories/blackListRepository.js'
+import { blackListRepository } from '../repositories/blackListRepository.js'
 
 function parseExpiryToDate(expiresIn) {
   const now = new Date()
@@ -80,10 +80,10 @@ export const tokenService = {
   async blacklistAccessToken(token) {
     const decoded = this.verifyAccessToken(token)
     const expiresAt = new Date(decoded.exp * 1000).toISOString()
-    await blacklistRepository.add(token, expiresAt)
+    await blackListRepository.add(token, expiresAt)
   },
 
   async isBlacklisted(token) {
-    return blacklistRepository.exists(token)
+    return blackListRepository.exists(token)
   },
 }

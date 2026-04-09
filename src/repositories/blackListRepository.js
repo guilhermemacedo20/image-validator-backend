@@ -1,6 +1,6 @@
 import { db } from '../database/index.js'
 
-export const blacklistRepository = {
+export const blackListRepository = {
   add(token, expiresAt) {
     return new Promise((resolve, reject) => {
       db.run(

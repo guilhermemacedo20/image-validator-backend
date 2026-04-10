@@ -115,9 +115,26 @@ export const authController = {
   },
 
   async me(req, res) {
-    return res.status(200).json({
-      user: req.user,
-    })
+    try {
+      const user = await userRepository.findById(req.user.id)
+      if (!user) {
+        return res.status(404).json({ error: "Usuário não encontrado" })
+      }
+
+      return res.status(200).json({
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone,
+          address: user.address,
+          twoFactorEnabled: user.two_factor_enabled,
+        },
+      })
+    } catch {
+      return res.status(500).json({ error: "Erro ao buscar usuário" })
+    }
   },
 
   async setup2FA(req, res) {

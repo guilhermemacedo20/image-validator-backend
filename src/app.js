@@ -5,18 +5,28 @@ import routes from './routes/index.js'
 
 const app = express()
 
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas requisições. Tente novamente em alguns minutos.' },
+})
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas tentativas de autenticação. Tente novamente em 15 minutos.' },
+  skipSuccessfulRequests: true,
+})
+
 app.use(cors())
 app.use(express.json())
-
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    standardHeaders: true,
-    legacyHeaders: false,
-  })
-)
-
+app.use(globalLimiter)
+app.use('/api/auth/login', authLimiter)
+app.use('/api/auth/refresh', authLimiter)
 app.use('/api', routes)
 
 export default app

@@ -2,6 +2,31 @@ import sqlite3 from 'sqlite3'
 
 export const db = new sqlite3.Database('./db.sqlite')
 
+function columnExists(tableName, columnName) {
+  return new Promise((resolve, reject) => {
+    db.all(`PRAGMA table_info(${tableName})`, [], (err, rows) => {
+      if (err) return reject(err)
+      resolve(rows.some((row) => row.name === columnName))
+    })
+  })
+}
+
+function run(sql) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, [], (err) => {
+      if (err) return reject(err)
+      resolve(true)
+    })
+  })
+}
+
+async function ensureUserColumn(columnName, definition) {
+  const exists = await columnExists('users', columnName)
+  if (!exists) {
+    await run(`ALTER TABLE users ADD COLUMN ${columnName} ${definition}`)
+  }
+}
+
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
@@ -48,4 +73,16 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `)
+})
+
+Promise.all([
+  ensureUserColumn('first_name', 'TEXT'),
+  ensureUserColumn('last_name', 'TEXT'),
+  ensureUserColumn('phone', 'TEXT'),
+  ensureUserColumn('address', 'TEXT'),
+  ensureUserColumn('failed_login_attempts', 'INTEGER NOT NULL DEFAULT 0'),
+  ensureUserColumn('locked_until', 'DATETIME'),
+  ensureUserColumn('last_login_at', 'DATETIME'),
+]).catch((error) => {
+  console.error('Erro ao aplicar migrações SQLite:', error)
 })

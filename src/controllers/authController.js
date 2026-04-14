@@ -3,6 +3,10 @@ import { twoFactorService } from '../services/twoFactorService.js'
 import { userRepository } from '../repositories/userRepository.js'
 import { logService } from '../services/logService.js'
 
+function isValidPhone(value) {
+  return /^\d{10,11}$/.test(String(value || '').replace(/\D/g, ''))
+}
+
 export const authController = {
   async register(req, res) {
     try {
@@ -12,7 +16,7 @@ export const authController = {
 
       await logService.write(req, {
         userId: user.id,
-        email,
+        email: user.email,
         action: 'REGISTER_SUCCESS',
       })
 
@@ -118,22 +122,73 @@ export const authController = {
     try {
       const user = await userRepository.findById(req.user.id)
       if (!user) {
-        return res.status(404).json({ error: "Usuário não encontrado" })
+        return res.status(404).json({ error: 'Usuário não encontrado' })
       }
 
       return res.status(200).json({
         user: {
           id: user.id,
           email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          phone: user.phone,
-          address: user.address,
-          twoFactorEnabled: user.two_factor_enabled,
+          firstName: user.first_name || '',
+          lastName: user.last_name || '',
+          phone: user.phone || '',
+          address: user.address || '',
+          twoFactorEnabled: Boolean(user.two_factor_enabled),
         },
       })
     } catch {
-      return res.status(500).json({ error: "Erro ao buscar usuário" })
+      return res.status(500).json({ error: 'Erro ao buscar usuário' })
+    }
+  },
+
+  async updateProfile(req, res) {
+    try {
+      const { firstName, lastName, phone, address } = req.body
+
+      if (!firstName || !lastName || !phone || !address) {
+        return res.status(400).json({ error: 'Preencha todos os campos do perfil' })
+      }
+
+      if (!isValidPhone(phone)) {
+        return res.status(400).json({ error: 'Telefone inválido' })
+      }
+
+      await userRepository.updateProfile(req.user.id, {
+        firstName: String(firstName).trim(),
+        lastName: String(lastName).trim(),
+        phone: String(phone).trim(),
+        address: String(address).trim(),
+      })
+
+      const user = await userRepository.findById(req.user.id)
+
+      await logService.write(req, {
+        userId: req.user.id,
+        email: req.user.email,
+        action: 'PROFILE_UPDATED',
+      })
+
+      return res.status(200).json({
+        message: 'Perfil atualizado com sucesso',
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name || '',
+          lastName: user.last_name || '',
+          phone: user.phone || '',
+          address: user.address || '',
+          twoFactorEnabled: Boolean(user.two_factor_enabled),
+        },
+      })
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: 'PROFILE_UPDATE_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
     }
   },
 

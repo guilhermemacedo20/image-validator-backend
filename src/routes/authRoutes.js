@@ -16,4 +16,7 @@ router.post('/2fa/setup', authMiddleware, twoFactorMiddleware, authController.se
 router.post('/2fa/confirm', authMiddleware, twoFactorMiddleware, authController.confirm2FA)
 router.post('/2fa/disable', authMiddleware, twoFactorMiddleware, authController.disable2FA)
 
+router.post('/forgot-password', authController.forgotPassword)
+router.post('/reset-password', authController.resetPassword)
+
 export default router

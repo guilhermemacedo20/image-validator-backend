@@ -1,13 +1,11 @@
 import { db } from '../database/index.js'
 
 export const userRepository = {
+
   create(email, password) {
     return new Promise((resolve, reject) => {
       db.run(
-        `
-          INSERT INTO users (email, password)
-          VALUES (?, ?)
-        `,
+        `INSERT INTO users (email, password) VALUES (?, ?)`,
         [email, password],
         function (err) {
           if (err) return reject(err)
@@ -38,6 +36,73 @@ export const userRepository = {
         (err, row) => {
           if (err) return reject(err)
           resolve(row || null)
+        }
+      )
+    })
+  },
+
+  saveResetToken(userId, token, expires) {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `
+          UPDATE users
+          SET reset_token = ?, reset_token_expires = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `,
+        [token, expires, userId],
+        function (err) {
+          if (err) return reject(err)
+          resolve(true)
+        }
+      )
+    })
+  },
+
+  findByToken(token) {
+    return new Promise((resolve, reject) => {
+      db.get(
+        `
+          SELECT * FROM users
+          WHERE reset_token = ?
+        `,
+        [token],
+        (err, row) => {
+          if (err) return reject(err)
+          resolve(row || null)
+        }
+      )
+    })
+  },
+
+  clearResetToken(userId) {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `
+          UPDATE users
+          SET reset_token = NULL, reset_token_expires = NULL, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `,
+        [userId],
+        function (err) {
+          if (err) return reject(err)
+          resolve(true)
+        }
+      )
+    })
+  },
+
+  updatePassword(userId, password) {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `
+          UPDATE users
+          SET password = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `,
+        [password, userId],
+        function (err) {
+          if (err) return reject(err)
+          resolve(true)
         }
       )
     })
@@ -139,7 +204,10 @@ export const userRepository = {
       db.run(
         `
           UPDATE users
-          SET failed_login_attempts = 0, locked_until = NULL, last_login_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+          SET failed_login_attempts = 0,
+              locked_until = NULL,
+              last_login_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
           WHERE id = ?
         `,
         [userId],

@@ -4,6 +4,8 @@ import { userRepository } from '../repositories/userRepository.js'
 import { authRepository } from '../repositories/authRepository.js'
 import { tokenService } from './tokenService.js'
 import { twoFactorService } from './twoFactorService.js'
+import { randomBytes, createHash } from 'crypto'
+import { sendResetEmail } from './mailService.js'
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -100,6 +102,57 @@ export const authService = {
       refreshToken,
       user: payload,
     }
+  },
+
+  async forgotPassword(email) {
+    const normalizedEmail = String(email || '').trim().toLowerCase()
+
+    const user = await userRepository.findByEmail(normalizedEmail)
+
+    if (!user) return true
+
+    const rawToken = randomBytes(32).toString('hex')
+
+    const hashedToken = createHash('sha256')
+      .update(rawToken)
+      .digest('hex')
+
+    const expires = Date.now() + 1000 * 60 * 15
+
+    await userRepository.saveResetToken(user.id, hashedToken, expires)
+
+    await sendResetEmail(user.email, rawToken)
+
+    return true
+  },
+
+  async resetPassword(token, newPassword) {
+
+    if (!isStrongPassword(newPassword)) {
+      throw new Error('Senha não atende aos requisitos de segurança')
+    }
+
+    const hashedToken = createHash('sha256')
+      .update(token)
+      .digest('hex')
+
+    const user = await userRepository.findByToken(hashedToken)
+
+    if (!user) {
+      throw new Error('Token inválido')
+    }
+
+    if (user.reset_token_expires < Date.now()) {
+      throw new Error('Token expirado')
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, env.BCRYPT_ROUNDS)
+
+    await userRepository.updatePassword(user.id, hashedPassword)
+
+    await userRepository.clearResetToken(user.id)
+
+    return true
   },
 
   async refresh(refreshToken) {

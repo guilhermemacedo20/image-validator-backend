@@ -9,4 +9,7 @@ export const env = {
   ACCESS_TOKEN_EXPIRES_IN: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m',
   REFRESH_TOKEN_EXPIRES_IN: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d',
   BCRYPT_ROUNDS: Number(process.env.BCRYPT_ROUNDS || 12),
+  EMAIL_USER: process.env.EMAIL_USER || '',
+  EMAIL_PASS: process.env.EMAIL_PASS || '',
+  FRONT_URL: process.env.FRONT_URL || 'https://image-validator-frontend-cyan.vercel.app',
 }

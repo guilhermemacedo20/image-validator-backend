@@ -192,6 +192,54 @@ export const authController = {
     }
   },
 
+  async forgotPassword(req, res) {
+    try {
+      const { email } = req.body
+
+      await authService.forgotPassword(email)
+
+      await logService.write(req, {
+        email,
+        action: 'PASSWORD_RESET_REQUESTED',
+      })
+
+      return res.status(200).json({
+        message: 'Se o email existir, você receberá instruções',
+      })
+    } catch (error) {
+      await logService.write(req, {
+        email: req.body?.email || null,
+        action: 'PASSWORD_RESET_REQUEST_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async resetPassword(req, res) {
+    try {
+      const { token, newPassword } = req.body
+
+      await authService.resetPassword(token, newPassword)
+
+      await logService.write(req, {
+        action: 'PASSWORD_RESET_SUCCESS',
+      })
+
+      return res.status(200).json({
+        message: 'Senha alterada com sucesso',
+      })
+    } catch (error) {
+      await logService.write(req, {
+        action: 'PASSWORD_RESET_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
   async setup2FA(req, res) {
     try {
       const user = await userRepository.findById(req.user.id)

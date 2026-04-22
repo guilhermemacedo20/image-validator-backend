@@ -83,6 +83,8 @@ Promise.all([
   ensureUserColumn('failed_login_attempts', 'INTEGER NOT NULL DEFAULT 0'),
   ensureUserColumn('locked_until', 'DATETIME'),
   ensureUserColumn('last_login_at', 'DATETIME'),
+  ensureUserColumn('reset_token', 'TEXT'),
+  ensureUserColumn('reset_token_expires', 'INTEGER'),
 ]).catch((error) => {
   console.error('Erro ao aplicar migrações SQLite:', error)
 })

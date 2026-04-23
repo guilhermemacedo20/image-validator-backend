@@ -23,8 +23,8 @@ export const twoFactorService = {
     return speakeasy.totp.verify({
       secret,
       encoding: 'base32',
-      token,
-      window: 1,
+      token: String(token || '').trim().replace(/\s+/g, ''),
+      window: 2,
     })
   },
 

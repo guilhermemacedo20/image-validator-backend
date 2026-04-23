@@ -2,8 +2,18 @@ import express from 'express'
 import cors from 'cors'
 import rateLimit from 'express-rate-limit'
 import routes from './routes/index.js'
+import { env } from './config/env.js'
 
 const app = express()
+
+app.set('trust proxy', 1)
+
+app.use((req, res, next) => {
+  if (env.NODE_ENV === 'production' && !req.secure) {
+    return res.redirect(`https://${req.headers.host}${req.url}`)
+  }
+  next()
+})
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

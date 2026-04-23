@@ -2,17 +2,34 @@ import { authService } from '../services/authService.js'
 import { twoFactorService } from '../services/twoFactorService.js'
 import { userRepository } from '../repositories/userRepository.js'
 import { logService } from '../services/logService.js'
+import { decrypt } from '../utils/crypto.js'
+import { authRepository } from '../repositories/authRepository.js'
 
 function isValidPhone(value) {
   return /^\d{10,11}$/.test(String(value || '').replace(/\D/g, ''))
 }
 
+function serializeUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.first_name || '',
+    lastName: user.last_name || '',
+    phone: decrypt(user.phone),
+    address: decrypt(user.address),
+    twoFactorEnabled: Boolean(user.two_factor_enabled),
+    consent: Boolean(user.consent),
+    consentDate: user.consent_date || null,
+    consentVersion: user.consent_version || null,
+    createdAt: user.created_at || null,
+  }
+}
+
 export const authController = {
   async register(req, res) {
     try {
-      const { email, password } = req.body
-
-      const user = await authService.register({ email, password })
+      const { email, password, consent } = req.body
+      const user = await authService.register({ email, password, consent })
 
       await logService.write(req, {
         userId: user.id,
@@ -37,9 +54,8 @@ export const authController = {
 
   async login(req, res) {
     try {
-      const { email, password, twoFactorCode } = req.body
-
-      const result = await authService.login({ email, password, twoFactorCode })
+      const { email, password, twoFactorCode, twoFactorToken } = req.body
+      const result = await authService.login({ email, password, twoFactorCode, twoFactorToken })
 
       if (result.requiresTwoFactor) {
         await logService.write(req, {
@@ -49,13 +65,14 @@ export const authController = {
 
         return res.status(200).json({
           requiresTwoFactor: true,
+          twoFactorToken: result.twoFactorToken,
           message: 'Código 2FA necessário',
         })
       }
 
       await logService.write(req, {
         userId: result.user.id,
-        email,
+        email: result.user.email,
         action: 'LOGIN_SUCCESS',
       })
 
@@ -74,7 +91,6 @@ export const authController = {
   async refresh(req, res) {
     try {
       const { refreshToken } = req.body
-
       const tokens = await authService.refresh(refreshToken)
 
       await logService.write(req, {
@@ -125,17 +141,7 @@ export const authController = {
         return res.status(404).json({ error: 'Usuário não encontrado' })
       }
 
-      return res.status(200).json({
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.first_name || '',
-          lastName: user.last_name || '',
-          phone: user.phone || '',
-          address: user.address || '',
-          twoFactorEnabled: Boolean(user.two_factor_enabled),
-        },
-      })
+      return res.status(200).json({ user: serializeUser(user) })
     } catch {
       return res.status(500).json({ error: 'Erro ao buscar usuário' })
     }
@@ -156,8 +162,8 @@ export const authController = {
       await userRepository.updateProfile(req.user.id, {
         firstName: String(firstName).trim(),
         lastName: String(lastName).trim(),
-        phone: String(phone).trim(),
-        address: String(address).trim(),
+        phone: authService.encryptProfileValue(String(phone).trim()),
+        address: authService.encryptProfileValue(String(address).trim()),
       })
 
       const user = await userRepository.findById(req.user.id)
@@ -170,15 +176,7 @@ export const authController = {
 
       return res.status(200).json({
         message: 'Perfil atualizado com sucesso',
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.first_name || '',
-          lastName: user.last_name || '',
-          phone: user.phone || '',
-          address: user.address || '',
-          twoFactorEnabled: Boolean(user.two_factor_enabled),
-        },
+        user: serializeUser(user),
       })
     } catch (error) {
       await logService.write(req, {
@@ -192,10 +190,86 @@ export const authController = {
     }
   },
 
+  async exportData(req, res) {
+    try {
+      const user = await userRepository.findById(req.user.id)
+      if (!user) {
+        return res.status(404).json({ error: 'Usuário não encontrado' })
+      }
+
+      await logService.write(req, {
+        userId: req.user.id,
+        email: req.user.email,
+        action: 'DATA_EXPORT_SUCCESS',
+      })
+
+      return res.status(200).json({ data: serializeUser(user) })
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: 'DATA_EXPORT_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async revokeConsent(req, res) {
+    try {
+      await userRepository.updateConsent(req.user.id, {
+        consent: false,
+        consentDate: new Date().toISOString(),
+        consentVersion: '1.0',
+      })
+
+      await logService.write(req, {
+        userId: req.user.id,
+        email: req.user.email,
+        action: 'CONSENT_REVOKED',
+      })
+
+      return res.status(200).json({ message: 'Consentimento revogado com sucesso' })
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: 'CONSENT_REVOKE_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async deleteAccount(req, res) {
+    try {
+      await authRepository.revokeAllUserRefreshTokens(req.user.id)
+      await userRepository.deleteById(req.user.id)
+
+      await logService.write(req, {
+        userId: req.user.id,
+        email: req.user.email,
+        action: 'ACCOUNT_DELETED',
+      })
+
+      return res.status(200).json({ message: 'Conta excluída com sucesso' })
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: 'ACCOUNT_DELETE_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
   async forgotPassword(req, res) {
     try {
       const { email } = req.body
-
       await authService.forgotPassword(email)
 
       await logService.write(req, {
@@ -220,16 +294,13 @@ export const authController = {
   async resetPassword(req, res) {
     try {
       const { token, newPassword } = req.body
-
       await authService.resetPassword(token, newPassword)
 
       await logService.write(req, {
         action: 'PASSWORD_RESET_SUCCESS',
       })
 
-      return res.status(200).json({
-        message: 'Senha alterada com sucesso',
-      })
+      return res.status(200).json({ message: 'Senha alterada com sucesso' })
     } catch (error) {
       await logService.write(req, {
         action: 'PASSWORD_RESET_FAILED',
@@ -271,7 +342,6 @@ export const authController = {
   async confirm2FA(req, res) {
     try {
       const { token } = req.body
-
       await twoFactorService.confirmActivation(req.user.id, token)
 
       await logService.write(req, {
@@ -285,7 +355,7 @@ export const authController = {
       await logService.write(req, {
         userId: req.user?.id || null,
         email: req.user?.email || null,
-        action: '2FA_CONFIRM_FAILED',
+        action: '2FA_ENABLE_FAILED',
         metadata: { reason: error.message },
       })
 

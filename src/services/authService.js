@@ -6,6 +6,7 @@ import { tokenService } from './tokenService.js'
 import { twoFactorService } from './twoFactorService.js'
 import { randomBytes, createHash } from 'crypto'
 import { sendResetEmail } from './mailService.js'
+import { encrypt } from '../utils/crypto.js'
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -31,7 +32,7 @@ async function applyFailedLoginDelay() {
 }
 
 export const authService = {
-  async register({ email, password }) {
+  async register({ email, password, consent = false }) {
     const normalizedEmail = String(email || '').trim().toLowerCase()
 
     if (!isValidEmail(normalizedEmail)) {
@@ -42,42 +43,38 @@ export const authService = {
       throw new Error('A senha deve ter no mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial')
     }
 
+    if (!consent) {
+      throw new Error('É necessário aceitar os termos e a política de privacidade')
+    }
+
     const exists = await userRepository.findByEmail(normalizedEmail)
     if (exists) {
       throw new Error('Usuário já existe')
     }
 
     const hash = await bcrypt.hash(password, env.BCRYPT_ROUNDS)
-    const user = await userRepository.create(normalizedEmail, hash)
+    const user = await userRepository.create({
+      email: normalizedEmail,
+      password: hash,
+      consent: true,
+      consentDate: new Date().toISOString(),
+      consentVersion: '1.0',
+    })
 
     return user
   },
 
-  async login({ email, password, twoFactorCode }) {
-    const normalizedEmail = String(email || '').trim().toLowerCase()
-    const user = await userRepository.findByEmail(normalizedEmail)
+  async login({ email, password, twoFactorCode, twoFactorToken }) {
+    let user
 
-    await applyFailedLoginDelay()
+    if (twoFactorToken) {
+      const decoded = tokenService.verifyTwoFactorToken(twoFactorToken)
+      user = await userRepository.findById(decoded.id)
 
-    if (!user) {
-      throw new Error('Credenciais inválidas')
-    }
+      await applyFailedLoginDelay()
 
-    if (isAccountLocked(user)) {
-      throw new Error('Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde.')
-    }
-
-    const validPassword = await bcrypt.compare(password, user.password)
-    if (!validPassword) {
-      await userRepository.registerFailedLogin(user.id)
-      throw new Error('Credenciais inválidas')
-    }
-
-    if (user.two_factor_enabled) {
-      if (!twoFactorCode) {
-        return {
-          requiresTwoFactor: true,
-        }
+      if (!user || !user.two_factor_enabled) {
+        throw new Error('Fluxo 2FA inválido')
       }
 
       const valid2FA = twoFactorService.verify(user.two_factor_secret, twoFactorCode)
@@ -85,12 +82,37 @@ export const authService = {
         await userRepository.registerFailedLogin(user.id)
         throw new Error('Código 2FA inválido')
       }
+    } else {
+      const normalizedEmail = String(email || '').trim().toLowerCase()
+      user = await userRepository.findByEmail(normalizedEmail)
+
+      await applyFailedLoginDelay()
+
+      if (!user) {
+        throw new Error('Credenciais inválidas')
+      }
+
+      if (isAccountLocked(user)) {
+        throw new Error('Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde.')
+      }
+
+      const validPassword = await bcrypt.compare(password, user.password)
+      if (!validPassword) {
+        await userRepository.registerFailedLogin(user.id)
+        throw new Error('Credenciais inválidas')
+      }
+
+      if (user.two_factor_enabled) {
+        return {
+          requiresTwoFactor: true,
+          twoFactorToken: tokenService.generateTwoFactorToken({ id: user.id, email: user.email }),
+        }
+      }
     }
 
     await userRepository.resetLoginFailures(user.id)
 
     const payload = { id: user.id, email: user.email }
-
     const accessToken = tokenService.generateAccessToken(payload)
     const refreshToken = tokenService.generateRefreshToken(payload)
 
@@ -106,36 +128,26 @@ export const authService = {
 
   async forgotPassword(email) {
     const normalizedEmail = String(email || '').trim().toLowerCase()
-
     const user = await userRepository.findByEmail(normalizedEmail)
 
     if (!user) return true
 
     const rawToken = randomBytes(32).toString('hex')
-
-    const hashedToken = createHash('sha256')
-      .update(rawToken)
-      .digest('hex')
-
+    const hashedToken = createHash('sha256').update(rawToken).digest('hex')
     const expires = Date.now() + 1000 * 60 * 15
 
     await userRepository.saveResetToken(user.id, hashedToken, expires)
-
     await sendResetEmail(user.email, rawToken)
 
     return true
   },
 
   async resetPassword(token, newPassword) {
-
     if (!isStrongPassword(newPassword)) {
       throw new Error('Senha não atende aos requisitos de segurança')
     }
 
-    const hashedToken = createHash('sha256')
-      .update(token)
-      .digest('hex')
-
+    const hashedToken = createHash('sha256').update(token).digest('hex')
     const user = await userRepository.findByToken(hashedToken)
 
     if (!user) {
@@ -149,8 +161,8 @@ export const authService = {
     const hashedPassword = await bcrypt.hash(newPassword, env.BCRYPT_ROUNDS)
 
     await userRepository.updatePassword(user.id, hashedPassword)
-
     await userRepository.clearResetToken(user.id)
+    await authRepository.revokeAllUserRefreshTokens(user.id)
 
     return true
   },
@@ -162,12 +174,10 @@ export const authService = {
 
     const decoded = tokenService.verifyRefreshToken(refreshToken)
 
-    const tokens = await tokenService.rotateRefreshToken(refreshToken, {
+    return tokenService.rotateRefreshToken(refreshToken, {
       id: decoded.id,
       email: decoded.email,
     })
-
-    return tokens
   },
 
   async logout(accessToken, refreshToken) {
@@ -180,5 +190,9 @@ export const authService = {
     }
 
     return true
+  },
+
+  encryptProfileValue(value) {
+    return encrypt(value)
   },
 }

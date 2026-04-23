@@ -41,12 +41,26 @@ export const tokenService = {
     })
   },
 
+  generateTwoFactorToken(payload) {
+    return jwt.sign({ ...payload, purpose: '2fa' }, env.JWT_SECRET, {
+      expiresIn: '5m',
+    })
+  },
+
   verifyAccessToken(token) {
     return jwt.verify(token, env.JWT_SECRET)
   },
 
   verifyRefreshToken(token) {
     return jwt.verify(token, env.JWT_REFRESH_SECRET)
+  },
+
+  verifyTwoFactorToken(token) {
+    const decoded = jwt.verify(token, env.JWT_SECRET)
+    if (decoded.purpose !== '2fa') {
+      throw new Error('Token 2FA inválido')
+    }
+    return decoded
   },
 
   async persistRefreshToken(userId, refreshToken) {

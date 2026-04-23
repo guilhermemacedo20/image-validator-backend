@@ -1,12 +1,15 @@
 import { db } from '../database/index.js'
 
 export const userRepository = {
-
-  create(email, password) {
+  create({ email, password, firstName = null, lastName = null, phone = null, address = null, consent = false, consentDate = null, consentVersion = null }) {
     return new Promise((resolve, reject) => {
       db.run(
-        `INSERT INTO users (email, password) VALUES (?, ?)`,
-        [email, password],
+        `
+          INSERT INTO users (
+            email, password, first_name, last_name, phone, address, consent, consent_date, consent_version
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [email, password, firstName, lastName, phone, address, consent ? 1 : 0, consentDate, consentVersion],
         function (err) {
           if (err) return reject(err)
           resolve({ id: this.lastID, email })
@@ -173,6 +176,32 @@ export const userRepository = {
           resolve(true)
         }
       )
+    })
+  },
+
+  updateConsent(userId, { consent, consentDate = null, consentVersion = null }) {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `
+          UPDATE users
+          SET consent = ?, consent_date = ?, consent_version = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `,
+        [consent ? 1 : 0, consentDate, consentVersion, userId],
+        function (err) {
+          if (err) return reject(err)
+          resolve(true)
+        }
+      )
+    })
+  },
+
+  deleteById(userId) {
+    return new Promise((resolve, reject) => {
+      db.run(`DELETE FROM users WHERE id = ?`, [userId], function (err) {
+        if (err) return reject(err)
+        resolve(true)
+      })
     })
   },
 

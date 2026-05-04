@@ -1,0 +1,48 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Banco local
+db.sqlite
+db.sqlite3
+*.db
+
+# Uploads
+uploads/
+
+# Logs
+logs/
+*.log
+
+# Build / temp
+dist/
+build/
+tmp/
+temp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Coverage
+coverage/
+
+# Cache
+.cache/
+
+# Misc
+*.pid
+*.seed
+*.pid.lock

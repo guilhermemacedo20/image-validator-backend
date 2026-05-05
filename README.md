@@ -2,7 +2,7 @@
 
 ## 📌 Visão Geral
 
-O **Secure Image Validator** é uma API desenvolvida em Node.js responsável por autentação segura de usuários, análise de imagens via inteligência artificial e gerenciamento de dados conforme a LGPD.
+O **Secure Image Validator** é um sistema back-end desenvolvido em Node.js responsável por autentação segura de usuários, análise de imagens via inteligência artificial e gerenciamento de dados conforme a LGPD.
 
 O sistema implementa mecanismos avançados de segurança, incluindo autenticação multifator (2FA), proteção contra ataques de força bruta e criptografia de dados sensíveis.
 
@@ -43,7 +43,6 @@ Controller → Service → Repository → Database
 * bcrypt
 * speakeasy (2FA)
 * crypto (AES-256-CBC + SHA-256)
-* express-rate-limit
 
 ---
 

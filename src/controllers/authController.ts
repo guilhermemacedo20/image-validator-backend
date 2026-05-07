@@ -1,4 +1,4 @@
-import { authService, LoginResponse } from '../services/authService.js'
+import { authService } from '../services/authService.js'
 import { twoFactorService } from '../services/twoFactorService.js'
 import { userRepository } from '../repositories/userRepository.js'
 import { logService } from '../services/logService.js'

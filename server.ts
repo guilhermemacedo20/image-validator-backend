@@ -1,6 +1,6 @@
-import app from './src/app.js'
-import { env } from './src/config/env.js'
-import { blackListRepository } from './src/repositories/blackListRepository.js'
+import app from './src/app'
+import { env } from './src/config/env'
+import { blackListRepository } from './src/repositories/blackListRepository'
 
 app.listen(env.PORT, async () => {
   await blackListRepository.cleanupExpired()

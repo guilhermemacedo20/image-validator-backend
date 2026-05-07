@@ -1,7 +1,11 @@
 import { db } from '../database/index.js'
 
 export const authRepository = {
-  saveRefreshToken(userId, token, expiresAt) {
+  saveRefreshToken(
+    userId: number | string,
+    token: string,
+    expiresAt: string
+  ): Promise<boolean> {
     return new Promise((resolve, reject) => {
       db.run(
         `
@@ -9,15 +13,16 @@ export const authRepository = {
           VALUES (?, ?, ?, 0)
         `,
         [userId, token, expiresAt],
-        function (err) {
+        function (err: Error | null) {
           if (err) return reject(err)
+
           resolve(true)
         }
       )
     })
   },
 
-  findRefreshToken(token) {
+  findRefreshToken(token: string): Promise<RefreshTokenRow | null> {
     return new Promise((resolve, reject) => {
       db.get(
         `
@@ -25,15 +30,16 @@ export const authRepository = {
           WHERE token = ?
         `,
         [token],
-        (err, row) => {
+        (err: Error | null, row: RefreshTokenRow) => {
           if (err) return reject(err)
+
           resolve(row || null)
         }
       )
     })
   },
 
-  revokeRefreshToken(token) {
+  revokeRefreshToken(token: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
       db.run(
         `
@@ -42,15 +48,16 @@ export const authRepository = {
           WHERE token = ?
         `,
         [token],
-        function (err) {
+        function (err: Error | null) {
           if (err) return reject(err)
+
           resolve(true)
         }
       )
     })
   },
 
-  revokeAllUserRefreshTokens(userId) {
+  revokeAllUserRefreshTokens(userId: number | string): Promise<boolean> {
     return new Promise((resolve, reject) => {
       db.run(
         `
@@ -59,8 +66,9 @@ export const authRepository = {
           WHERE user_id = ?
         `,
         [userId],
-        function (err) {
+        function (err: Error | null) {
           if (err) return reject(err)
+
           resolve(true)
         }
       )

@@ -38,7 +38,7 @@ Controller → Service → Repository → Database
 
 * Node.js
 * Express
-* SQLite
+* Mongo
 * JWT (Access + Refresh Token)
 * bcrypt
 * speakeasy (2FA)

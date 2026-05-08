@@ -48,7 +48,7 @@ export const twoFactorService = {
   },
 
   async confirmActivation(
-    userId: number | string,
+    userId: string,
     token: string | number
   ): Promise<boolean> {
     const user = await userRepository.findById(
@@ -76,7 +76,7 @@ export const twoFactorService = {
   },
 
   async disable(
-    userId: number | string
+    userId: string
   ): Promise<boolean> {
     await userRepository.disableTwoFactor(userId)
 

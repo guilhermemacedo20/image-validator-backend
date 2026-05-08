@@ -19,11 +19,6 @@ interface LoginParams {
   twoFactorToken?: string
 }
 
-interface TokenPayload {
-  id: number | string
-  email: string
-}
-
 interface LoginResponse {
   requiresTwoFactor: boolean
   twoFactorToken?: string

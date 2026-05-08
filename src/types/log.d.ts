@@ -1,5 +1,5 @@
 interface CreateLogParams {
-  userId?: number | string | null
+  userId?: string | null
   email?: string | null
   action: string
   ip?: string | null
@@ -8,7 +8,7 @@ interface CreateLogParams {
 }
 
 interface WriteLogParams {
-  userId?: number | string | null
+  userId?: string | null
   email?: string | null
   action: string
   metadata?: unknown

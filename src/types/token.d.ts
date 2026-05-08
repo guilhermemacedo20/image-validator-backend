@@ -1,5 +1,5 @@
 interface TokenPayload {
-  id: number | string
+  id: string
   email: string
 }
 
@@ -21,7 +21,7 @@ interface TwoFactorSetupResult {
 }
 
 interface UserWithTwoFactor {
-  id: number | string
+  id: string
   email: string
   two_factor_secret?: string | null
 }

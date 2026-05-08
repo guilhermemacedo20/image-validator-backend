@@ -11,8 +11,7 @@ const genAI = new GoogleGenerativeAI(apiKey)
 export const aiService = {
   async analyzeImage(
     buffer: Buffer,
-    mimeType: string,
-    userId: number | string
+    userId: string
   ): Promise<AIAnalysisResult> {
     if (!userId) {
       throw new Error('Usuário não autenticado')

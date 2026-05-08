@@ -1,77 +1,73 @@
-import { db } from '../database/index.js'
+import { RefreshTokenModel } from '../models/RefreshToken.js'
+
+interface RefreshTokenRow {
+  id: string
+  user_id: string
+  token: string
+  expires_at: string | Date
+  revoked: boolean
+}
+
+function normalizeRefreshToken(document: any): RefreshTokenRow | null {
+  if (!document) return null
+
+  return {
+    id: String(document._id),
+    user_id: String(document.user_id),
+    token: document.token,
+    expires_at: document.expires_at,
+    revoked: Boolean(document.revoked)
+  }
+}
 
 export const authRepository = {
-  saveRefreshToken(
-    userId: number | string,
+  async saveRefreshToken(
+    userId: string,
     token: string,
     expiresAt: string
   ): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-          INSERT INTO refresh_tokens (user_id, token, expires_at, revoked)
-          VALUES (?, ?, ?, 0)
-        `,
-        [userId, token, expiresAt],
-        function (err: Error | null) {
-          if (err) return reject(err)
-
-          resolve(true)
-        }
-      )
+    await RefreshTokenModel.create({
+      user_id: userId,
+      token,
+      expires_at: new Date(expiresAt),
+      revoked: false
     })
+
+    return true
   },
 
-  findRefreshToken(token: string): Promise<RefreshTokenRow | null> {
-    return new Promise((resolve, reject) => {
-      db.get(
-        `
-          SELECT * FROM refresh_tokens
-          WHERE token = ?
-        `,
-        [token],
-        (err: Error | null, row: RefreshTokenRow) => {
-          if (err) return reject(err)
+  async findRefreshToken(
+    token: string
+  ): Promise<RefreshTokenRow | null> {
+    const refreshToken =
+      await RefreshTokenModel.findOne({ token }).lean()
 
-          resolve(row || null)
-        }
-      )
-    })
+    return normalizeRefreshToken(refreshToken)
   },
 
-  revokeRefreshToken(token: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-          UPDATE refresh_tokens
-          SET revoked = 1
-          WHERE token = ?
-        `,
-        [token],
-        function (err: Error | null) {
-          if (err) return reject(err)
+  async revokeRefreshToken(token: string): Promise<boolean> {
+    await RefreshTokenModel.updateOne(
+      { token },
+      {
+        revoked: true
+      }
+    )
 
-          resolve(true)
-        }
-      )
-    })
+    return true
   },
 
-  revokeAllUserRefreshTokens(userId: number | string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-          UPDATE refresh_tokens
-          SET revoked = 1
-          WHERE user_id = ?
-        `,
-        [userId],
-        function (err: Error | null) {
-          if (err) return reject(err)
+  async revokeAllUserRefreshTokens(
+    userId: string
+  ): Promise<boolean> {
+    await RefreshTokenModel.updateMany(
+      {
+        user_id: userId
+      },
+      {
+        revoked: true
+      }
+    )
 
-          resolve(true)
-        }
-      )
-    })
+    return true
   }
 }

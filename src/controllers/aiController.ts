@@ -23,9 +23,7 @@ export const aiController = {
 
       const buffer = fs.readFileSync(req.file.path)
 
-      const mimeType = req.file.mimetype
-
-      const result = await aiService.analyzeImage(buffer, mimeType, user.id)
+      const result = await aiService.analyzeImage(buffer, user.id)
 
       fs.unlinkSync(req.file.path)
 

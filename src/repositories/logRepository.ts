@@ -1,7 +1,16 @@
-import { db } from '../database/index.js'
+import { AuditLogModel } from '../models/AuditLog.js'
+
+interface CreateLogParams {
+  userId?: string | null
+  email?: string | null
+  action: string
+  ip?: string | null
+  userAgent?: string | null
+  metadata?: unknown
+}
 
 export const logRepository = {
-  create({
+  async create({
     userId = null,
     email = null,
     action,
@@ -9,37 +18,15 @@ export const logRepository = {
     userAgent = null,
     metadata = null
   }: CreateLogParams): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            INSERT INTO audit_logs (
-              user_id,
-              email,
-              action,
-              ip,
-              user_agent,
-              metadata
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-          `,
-
-        [
-          userId,
-          email,
-          action,
-          ip,
-          userAgent,
-          metadata ? JSON.stringify(metadata) : null
-        ],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
-      )
+    await AuditLogModel.create({
+      user_id: userId,
+      email,
+      action,
+      ip,
+      user_agent: userAgent,
+      metadata
     })
+
+    return true
   }
 }

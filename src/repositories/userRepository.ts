@@ -1,446 +1,197 @@
-import { db } from '../database/index.js'
+import { UserModel } from '../models/User.js'
+import { normalizeMongoDocument } from '../utils/normalizaMongo.js'
 
 export const userRepository = {
-  create({
+  async create({
     email,
-
     password,
-
     firstName = null,
-
     lastName = null,
-
     phone = null,
-
     address = null,
-
     consent = false,
-
     consentDate = null,
-
     consentVersion = null
-  }: CreateUserParams): Promise<{
-    id: number
-    email: string
-  }> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            INSERT INTO users (
-              email,
-              password,
-              first_name,
-              last_name,
-              phone,
-              address,
-              consent,
-              consent_date,
-              consent_version
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `,
-
-        [
-          email,
-
-          password,
-
-          firstName,
-
-          lastName,
-
-          phone,
-
-          address,
-
-          consent ? 1 : 0,
-
-          consentDate,
-
-          consentVersion
-        ],
-
-        function (this: { lastID: number }, err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve({
-            id: this.lastID,
-            email
-          })
-        }
-      )
+  }: CreateUserParams): Promise<Pick<User, 'id' | 'email'>> {
+    const user = await UserModel.create({
+      email,
+      password,
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+      address,
+      consent,
+      consent_date: consentDate,
+      consent_version: consentVersion
     })
+
+    return {
+      id: String(user._id),
+      email: user.email
+    }
   },
 
-  findByEmail(email: string): Promise<User | null> {
-    return new Promise((resolve, reject) => {
-      db.get(
-        `
-            SELECT *
-            FROM users
-            WHERE lower(email) = lower(?)
-          `,
+  async findByEmail(email: string): Promise<User | null> {
+    const user = await UserModel.findOne({
+      email: email.toLowerCase().trim()
+    }).lean()
 
-        [email],
-
-        (err: Error | null, row: User | undefined) => {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(row || null)
-        }
-      )
-    })
+    return normalizeMongoDocument(user) as User | null
   },
 
-  findById(id: number | string): Promise<User | null> {
-    return new Promise((resolve, reject) => {
-      db.get(
-        `
-            SELECT *
-            FROM users
-            WHERE id = ?
-          `,
+  async findById(id: string): Promise<User | null> {
+    const user = await UserModel.findById(id).lean()
 
-        [id],
-
-        (err: Error | null, row: User | undefined) => {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(row || null)
-        }
-      )
-    })
+    return normalizeMongoDocument(user) as User | null
   },
 
-  saveResetToken(
-    userId: number | string,
+  async saveResetToken(
+    userId: string,
     token: string,
     expires: number
   ): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            UPDATE users
-            SET
-              reset_token = ?,
-              reset_token_expires = ?,
-              updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `,
-
-        [token, expires, userId],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
-      )
+    await UserModel.findByIdAndUpdate(userId, {
+      reset_token: token,
+      reset_token_expires: expires
     })
+
+    return true
   },
 
-  findByToken(token: string): Promise<User | null> {
-    return new Promise((resolve, reject) => {
-      db.get(
-        `
-            SELECT *
-            FROM users
-            WHERE reset_token = ?
-          `,
+  async findByToken(token: string): Promise<User | null> {
+    const user = await UserModel.findOne({
+      reset_token: token
+    }).lean()
 
-        [token],
-
-        (err: Error | null, row: User | undefined) => {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(row || null)
-        }
-      )
-    })
+    return normalizeMongoDocument(user) as User | null
   },
 
-  clearResetToken(userId: number | string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            UPDATE users
-            SET
-              reset_token = NULL,
-              reset_token_expires = NULL,
-              updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `,
-
-        [userId],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
-      )
+  async clearResetToken(userId: string): Promise<boolean> {
+    await UserModel.findByIdAndUpdate(userId, {
+      reset_token: null,
+      reset_token_expires: null
     })
+
+    return true
   },
 
-  updatePassword(userId: number | string, password: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            UPDATE users
-            SET
-              password = ?,
-              updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `,
-
-        [password, userId],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
-      )
-    })
-  },
-
-  updateProfile(
-    userId: number | string,
-
-    { firstName, lastName, phone, address }: UpdateProfileParams
+  async updatePassword(
+    userId: string,
+    password: string
   ): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            UPDATE users
-            SET
-              first_name = ?,
-              last_name = ?,
-              phone = ?,
-              address = ?,
-              updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `,
-
-        [firstName, lastName, phone, address, userId],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
-      )
+    await UserModel.findByIdAndUpdate(userId, {
+      password
     })
+
+    return true
   },
 
-  setTwoFactorSecret(
-    userId: number | string,
+  async updateProfile(
+    userId: string,
+    {
+      firstName,
+      lastName,
+      phone,
+      address
+    }: UpdateProfileParams
+  ): Promise<boolean> {
+    await UserModel.findByIdAndUpdate(userId, {
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+      address
+    })
+
+    return true
+  },
+
+  async setTwoFactorSecret(
+    userId: string,
     secret: string
   ): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            UPDATE users
-            SET
-              two_factor_secret = ?,
-              updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `,
-
-        [secret, userId],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
-      )
+    await UserModel.findByIdAndUpdate(userId, {
+      two_factor_secret: secret
     })
+
+    return true
   },
 
-  enableTwoFactor(userId: number | string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            UPDATE users
-            SET
-              two_factor_enabled = 1,
-              updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `,
-
-        [userId],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
-      )
+  async enableTwoFactor(userId: string): Promise<boolean> {
+    await UserModel.findByIdAndUpdate(userId, {
+      two_factor_enabled: true
     })
+
+    return true
   },
 
-  disableTwoFactor(userId: number | string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            UPDATE users
-            SET
-              two_factor_enabled = 0,
-              two_factor_secret = NULL,
-              updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `,
-
-        [userId],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
-      )
+  async disableTwoFactor(userId: string): Promise<boolean> {
+    await UserModel.findByIdAndUpdate(userId, {
+      two_factor_enabled: false,
+      two_factor_secret: null
     })
+
+    return true
   },
 
-  updateConsent(
-    userId: number | string,
-
-    { consent, consentDate = null, consentVersion = null }: UpdateConsentParams
+  async updateConsent(
+    userId: string,
+    {
+      consent,
+      consentDate = null,
+      consentVersion = null
+    }: UpdateConsentParams
   ): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            UPDATE users
-            SET
-              consent = ?,
-              consent_date = ?,
-              consent_version = ?,
-              updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `,
-
-        [consent ? 1 : 0, consentDate, consentVersion, userId],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
-      )
+    await UserModel.findByIdAndUpdate(userId, {
+      consent,
+      consent_date: consentDate,
+      consent_version: consentVersion
     })
+
+    return true
   },
 
-  deleteById(userId: number | string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            DELETE FROM users
-            WHERE id = ?
-          `,
+  async deleteById(userId: string): Promise<boolean> {
+    await UserModel.findByIdAndDelete(userId)
 
-        [userId],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
-      )
-    })
+    return true
   },
 
-  registerFailedLogin(
-    userId: number | string,
+  async registerFailedLogin(
+    userId: string,
     lockMinutes = 15
   ): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            UPDATE users
-            SET
-              failed_login_attempts =
-                failed_login_attempts + 1,
+    const user = await UserModel.findById(userId)
 
-              locked_until = CASE
-                WHEN failed_login_attempts + 1 >= 5
-                THEN datetime('now', ?)
-                ELSE locked_until
-              END,
+    if (!user) return true
 
-              updated_at = CURRENT_TIMESTAMP
+    const attempts =
+      Number(user.failed_login_attempts || 0) + 1
 
-            WHERE id = ?
-          `,
+    const update: {
+      failed_login_attempts: number
+      locked_until?: Date
+    } = {
+      failed_login_attempts: attempts
+    }
 
-        [`+${lockMinutes} minutes`, userId],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
+    if (attempts >= 5) {
+      update.locked_until = new Date(
+        Date.now() + lockMinutes * 60 * 1000
       )
-    })
+    }
+
+    await UserModel.findByIdAndUpdate(userId, update)
+
+    return true
   },
 
-  resetLoginFailures(userId: number | string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-            UPDATE users
-            SET
-              failed_login_attempts = 0,
-
-              locked_until = NULL,
-
-              last_login_at =
-                CURRENT_TIMESTAMP,
-
-              updated_at =
-                CURRENT_TIMESTAMP
-
-            WHERE id = ?
-          `,
-
-        [userId],
-
-        function (err: Error | null) {
-          if (err) {
-            return reject(err)
-          }
-
-          resolve(true)
-        }
-      )
+  async resetLoginFailures(userId: string): Promise<boolean> {
+    await UserModel.findByIdAndUpdate(userId, {
+      failed_login_attempts: 0,
+      locked_until: null,
+      last_login_at: new Date()
     })
+
+    return true
   }
 }

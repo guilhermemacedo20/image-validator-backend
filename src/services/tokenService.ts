@@ -174,7 +174,7 @@ export const tokenService = {
   },
 
   async persistRefreshToken(
-    userId: number | string,
+    userId: string,
     refreshToken: string
   ): Promise<void> {
 

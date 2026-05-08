@@ -1,7 +1,7 @@
 interface User {
-  id: number | string
+  id: string
   email: string
-  password?: string
+  password: string
   first_name?: string | null
   last_name?: string | null
   phone?: string | null
@@ -9,13 +9,15 @@ interface User {
   two_factor_enabled?: boolean
   two_factor_secret?: string | null
   failed_login_attempts?: number
-  locked_until?: string | null
-  last_login_at?: string | null
+  locked_until?: string | Date | null
+  last_login_at?: string | Date | null
   reset_token?: string | null
   reset_token_expires?: number | null
   consent?: boolean
   consent_date?: string | null
   consent_version?: string | null
+  created_at?: string | Date | null
+  updated_at?: string | Date | null
 }
 
 interface CreateUserParams {

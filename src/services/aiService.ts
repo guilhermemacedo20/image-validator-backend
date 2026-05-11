@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const apiKey = process.env.GEMINI_API_KEY
+const modelType = process.env.GEMINI_MODEL
 
 if (!apiKey) {
   throw new Error('GEMINI_API_KEY não configurada')
@@ -21,7 +22,7 @@ export const aiService = {
     
     const model =
       genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash'
+        model: modelType || 'gemini-1.5-flash'
       })
 
     const prompt = `

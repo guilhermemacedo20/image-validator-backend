@@ -11,20 +11,14 @@ const genAI = new GoogleGenerativeAI(apiKey)
 export const aiService = {
   async analyzeImage(
     buffer: Buffer,
+    mimeType: any,
     userId: string
   ): Promise<AIAnalysisResult> {
     if (!userId) {
       throw new Error('Usuário não autenticado')
     }
 
-    const mock = this.mockGemini(buffer)
-
-    return {
-      provider: 'gemini-mock',
-      ...mock
-    }
-
-    /*
+    
     const model =
       genAI.getGenerativeModel({
         model: 'gemini-1.5-flash'
@@ -53,8 +47,6 @@ export const aiService = {
 
         {
           inlineData: {
-            mimeType,
-
             data:
               buffer.toString(
                 'base64'
@@ -91,7 +83,6 @@ export const aiService = {
       provider: 'gemini',
       ...parsed
     }
-    */
   },
 
   mockGemini(buffer: Buffer): GeminiResponse {

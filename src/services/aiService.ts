@@ -47,6 +47,8 @@ export const aiService = {
 
         {
           inlineData: {
+            mimeType,
+
             data:
               buffer.toString(
                 'base64'

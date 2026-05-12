@@ -19,14 +19,17 @@ export const aiService = {
       throw new Error('Usuário não autenticado')
     }
 
-    
-    const model =
-      genAI.getGenerativeModel({
-        model: modelType || 'gemini-1.5-flash'
-      })
+    const model = genAI.getGenerativeModel({
+      model: modelType || 'gemini-1.5-flash',
+      generationConfig: {
+        responseMimeType: 'application/json'
+      }
+    })
 
     const prompt = `
-    Analise a imagem e responda APENAS em JSON:
+    Analise a imagem e responda SOMENTE com JSON puro.
+    Não use markdown.
+    Não use \`\`\`.
 
     {
       "score": number (0 a 100),
@@ -42,43 +45,31 @@ export const aiService = {
     - padrões repetitivos
     `
 
-    const result =
-      await model.generateContent([
-        prompt,
+    const result = await model.generateContent([
+      prompt,
 
-        {
-          inlineData: {
-            mimeType,
+      {
+        inlineData: {
+          mimeType,
 
-            data:
-              buffer.toString(
-                'base64'
-              )
-          }
+          data: buffer.toString('base64')
         }
-      ])
+      }
+    ])
 
-    const text =
-      result.response.text()
+    const text = result.response.text()
 
     let parsed: GeminiResponse
 
     try {
-
-      parsed = JSON.parse(
-        text
-      ) as GeminiResponse
-
+      parsed = JSON.parse(text) as GeminiResponse
     } catch {
-
       parsed = {
-        score: 50,
+        score: 0,
 
         isAIGenerated: false,
 
-        reasons: [
-          'Erro ao interpretar resposta do Gemini'
-        ]
+        reasons: ['Erro ao interpretar resposta do Gemini']
       }
     }
 
@@ -87,26 +78,4 @@ export const aiService = {
       ...parsed
     }
   },
-
-  mockGemini(buffer: Buffer): GeminiResponse {
-    const size = buffer.length
-
-    if (size % 2 === 0) {
-      return {
-        score: 80,
-
-        isAIGenerated: true,
-
-        reasons: ['Padrões repetitivos detectados', 'Textura inconsistente']
-      }
-    }
-
-    return {
-      score: 30,
-
-      isAIGenerated: false,
-
-      reasons: ['Imagem com características naturais']
-    }
-  }
 }

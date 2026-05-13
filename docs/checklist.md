@@ -86,13 +86,13 @@
 
 ## 7. Resumo Científico
 
-- [ ] 7.1 - Resumo entre 200 e 300 palavras
-- [ ] 7.2 - Objetivo claramente definido
-- [ ] 7.3 - Metodologia técnica descrita
-- [ ] 7.4 - Mecanismos de segurança apresentados
-- [ ] 7.5 - Conformidade com a LGPD explicitada
-- [ ] 7.6 - Terminologia técnica adequada
-- [ ] 7.7 - Qualidade textual e científica
+- [x] 7.1 - Resumo entre 200 e 300 palavras
+- [x] 7.2 - Objetivo claramente definido
+- [x] 7.3 - Metodologia técnica descrita
+- [x] 7.4 - Mecanismos de segurança apresentados
+- [x] 7.5 - Conformidade com a LGPD explicitada
+- [x] 7.6 - Terminologia técnica adequada
+- [x] 7.7 - Qualidade textual e científica
 
 ---
 

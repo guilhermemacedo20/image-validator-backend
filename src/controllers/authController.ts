@@ -154,23 +154,17 @@ export const authController = {
 
   async updateProfile(req: any, res: any) {
     try {
-      const { firstName, lastName, phone, address } = req.body
+      const { firstName, lastName } = req.body
 
-      if (!firstName || !lastName || !phone || !address) {
+      if (!firstName || !lastName ) {
         return res
           .status(400)
           .json({ error: 'Preencha todos os campos do perfil' })
       }
 
-      if (!isValidPhone(phone)) {
-        return res.status(400).json({ error: 'Telefone inválido' })
-      }
-
       await userRepository.updateProfile(req.user.id, {
         firstName: String(firstName).trim(),
-        lastName: String(lastName).trim(),
-        phone: authService.encryptProfileValue(String(phone).trim()),
-        address: authService.encryptProfileValue(String(address).trim())
+        lastName: String(lastName).trim()
       })
 
       const user = await userRepository.findById(req.user.id)

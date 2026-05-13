@@ -91,15 +91,11 @@ export const userRepository = {
     {
       firstName,
       lastName,
-      phone,
-      address
     }: UpdateProfileParams
   ): Promise<boolean> {
     await UserModel.findByIdAndUpdate(userId, {
       first_name: firstName,
-      last_name: lastName,
-      phone,
-      address
+      last_name: lastName
     })
 
     return true

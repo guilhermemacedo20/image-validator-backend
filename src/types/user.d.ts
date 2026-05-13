@@ -35,8 +35,6 @@ interface CreateUserParams {
 interface UpdateProfileParams {
   firstName: string
   lastName: string
-  phone: string
-  address: string
 }
 
 interface UpdateConsentParams {

@@ -1,5 +1,4 @@
 import { Router, Request } from 'express'
-import multer from 'multer'
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 
 import { aiController } from '../controllers/aiController.js'
@@ -7,9 +6,6 @@ import { authMiddleware } from '../middlewares/authMiddleware.js'
 
 const router = Router()
 
-const upload = multer({
-  dest: 'uploads/'
-})
 
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -28,7 +24,6 @@ router.post(
   '/analyze-image',
   authMiddleware,
   aiLimiter,
-  upload.single('image'),
   aiController.analyzeImage
 )
 

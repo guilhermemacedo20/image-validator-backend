@@ -25,16 +25,6 @@ const userSchema = new Schema(
       default: null
     },
 
-    phone: {
-      type: String,
-      default: null
-    },
-
-    address: {
-      type: String,
-      default: null
-    },
-
     two_factor_enabled: {
       type: Boolean,
       default: false

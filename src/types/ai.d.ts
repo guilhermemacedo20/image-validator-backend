@@ -1,12 +1,14 @@
 interface AIAnalysisResult {
   provider: string
-  score: number
+  scoreIa: number
+  scoreReal: number
   isAIGenerated: boolean
   reasons: string[]
 }
 
 interface GeminiResponse {
-  score: number
+  scoreIa: number
+  scoreReal: number
   isAIGenerated: boolean
   reasons: string[]
 }

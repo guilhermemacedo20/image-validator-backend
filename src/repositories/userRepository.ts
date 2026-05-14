@@ -1,4 +1,4 @@
-import { UserModel } from '../models/User.js'
+import { UserModel } from '../database/models/User.js'
 import { normalizeMongoDocument } from '../utils/normalizaMongo.js'
 
 export const userRepository = {

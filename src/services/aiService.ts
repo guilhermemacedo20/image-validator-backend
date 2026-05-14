@@ -21,7 +21,7 @@ export const aiService = {
       const genAI = new GoogleGenerativeAI(geminiApiKey)
 
       const model = genAI.getGenerativeModel({
-        model: modelType || 'gemini-1.5-flash',
+        model: modelType || 'gemini-flash-latest',
 
         generationConfig: {
           responseMimeType: 'application/json'
@@ -30,11 +30,11 @@ export const aiService = {
 
       const prompt = `
         Analise a imagem e responda SOMENTE com JSON puro.
-        Não use markdown.
-        Não use \`\`\`.
+        Respondendo o score de acordo com a confiabilidade de que a imagem pode ter sido gerada por IA ou ser real, além disso valide a possibilidade de ser uma edição de imagem feita por humano e as razões devem considerar se foi gerada por IA ou não.
 
         {
-          "score": number (0 a 100),
+          "scoreIa": number (0 a 100),
+          "scoreReal": number (0 a 100),
           "isAIGenerated": boolean,
           "reasons": string[]
         }
@@ -65,7 +65,8 @@ export const aiService = {
         parsed = JSON.parse(text) as GeminiResponse
       } catch {
         parsed = {
-          score: 0,
+          scoreIa: 0,
+          scoreReal: 0,
           isAIGenerated: false,
           reasons: ['Erro ao interpretar resposta do Gemini']
         }

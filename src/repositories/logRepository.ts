@@ -1,4 +1,4 @@
-import { AuditLogModel } from '../models/AuditLog.js'
+import { AuditLogModel } from '../database/models/AuditLog.js'
 
 interface CreateLogParams {
   userId?: string | null

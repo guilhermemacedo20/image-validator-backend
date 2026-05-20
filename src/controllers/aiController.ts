@@ -1,5 +1,3 @@
-import fs from 'fs'
-
 import type { Request, Response } from 'express'
 
 import { aiService } from '../services/aiService.js'
@@ -11,47 +9,36 @@ export const aiController = {
 
       if (!user) {
         return res.status(401).json({
-          error: 'Usuário não autenticado'
+          error: 'Usuário não autenticado.'
         })
       }
 
-      if (!req.file) {
+      const { imageBase64, mimeType, geminiApiKey } = req.body
+
+      if (!imageBase64 || !mimeType) {
         return res.status(400).json({
-          error: 'Imagem não enviada'
+          error: 'Imagem e tipo são obrigatórios.'
         })
       }
 
-      const geminiApiKey = req.headers['x-gemini-api-key']
-
-      if (!geminiApiKey || Array.isArray(geminiApiKey)) {
+      if (!geminiApiKey) {
         return res.status(400).json({
-          error: 'Header x-gemini-api-key não enviado'
+          error: 'API Key do Gemini não informada.'
         })
       }
-
-      const buffer = fs.readFileSync(req.file.path)
-      const mimeType = req.file.mimetype
 
       const result = await aiService.analyzeImage(
-        buffer,
+        imageBase64,
         mimeType,
-        user.id,
         geminiApiKey
       )
 
-      fs.unlinkSync(req.file.path)
-
-      return res.json({
-        success: true,
-        data: result
-      })
-    } catch (err) {
-      console.error(err)
+      return res.json(result)
+    } catch (error) {
+      console.error(error)
 
       return res.status(500).json({
-        error: err instanceof Error
-          ? err.message
-          : 'Erro ao analisar imagem'
+        error: 'Erro ao analisar imagem.'
       })
     }
   }

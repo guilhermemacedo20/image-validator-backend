@@ -5,10 +5,6 @@ import { logService } from '../services/logService.js'
 import { decrypt } from '../utils/crypto.js'
 import { authRepository } from '../repositories/authRepository.js'
 
-function isValidPhone(value: string) {
-  return /^\d{10,11}$/.test(String(value || '').replace(/\D/g, ''))
-}
-
 function serializeUser(user: any) {
   return {
     id: user.id,

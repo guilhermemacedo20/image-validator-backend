@@ -4,25 +4,16 @@ const modelType = process.env.GEMINI_MODEL
 
 export const aiService = {
   async analyzeImage(
-    buffer: Buffer,
+    imageBase64: string,
     mimeType: string,
-    userId: string,
     geminiApiKey: string
   ): Promise<AIAnalysisResult> {
-    if (!userId) {
-      throw new Error('Usuário não autenticado')
-    }
-
-    if (!geminiApiKey) {
-      throw new Error('API Key do Gemini não enviada')
-    }
 
     try {
       const genAI = new GoogleGenerativeAI(geminiApiKey)
 
       const model = genAI.getGenerativeModel({
         model: modelType || 'gemini-flash-latest',
-
         generationConfig: {
           responseMimeType: 'application/json'
         }
@@ -30,11 +21,14 @@ export const aiService = {
 
       const prompt = `
         Analise a imagem e responda SOMENTE com JSON puro.
-        Respondendo o score de acordo com a confiabilidade de que a imagem pode ter sido gerada por IA ou ser real, além disso valide a possibilidade de ser uma edição de imagem feita por humano e as razões devem considerar se foi gerada por IA ou não.
+
+        Responda o score de acordo com a confiabilidade de que a imagem pode ter sido gerada por IA ou ser real.
+        Além disso, valide a possibilidade de ser uma edição de imagem feita por humano.
+        As razões devem considerar se foi gerada por IA, se é real ou se há indícios de edição humana.
 
         {
-          "scoreIa": number (0 a 100),
-          "scoreReal": number (0 a 100),
+          "scoreIa": number,
+          "scoreReal": number,
           "isAIGenerated": boolean,
           "reasons": string[]
         }
@@ -45,6 +39,8 @@ export const aiService = {
         - textura
         - artefatos
         - padrões repetitivos
+        - inconsistências visuais
+        - sinais de edição humana
       `
 
       const result = await model.generateContent([
@@ -52,7 +48,7 @@ export const aiService = {
         {
           inlineData: {
             mimeType,
-            data: buffer.toString('base64')
+            data: imageBase64
           }
         }
       ])
@@ -88,7 +84,10 @@ export const aiService = {
         throw new Error('API Key do Gemini inválida ou não encontrada')
       }
 
-      if (errorMessage.includes('quota')) {
+      if (
+        errorMessage.toLowerCase().includes('quota') ||
+        errorMessage.includes('RESOURCE_EXHAUSTED')
+      ) {
         throw new Error('Limite de uso da API Gemini excedido')
       }
 

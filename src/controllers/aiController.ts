@@ -13,7 +13,9 @@ export const aiController = {
         })
       }
 
-      const { imageBase64, mimeType, geminiApiKey } = req.body
+      const { imageBase64, mimeType } = req.body
+
+      const geminiApiKey = req.headers["x-gemini-api-key"] as string
 
       if (!imageBase64 || !mimeType) {
         return res.status(400).json({

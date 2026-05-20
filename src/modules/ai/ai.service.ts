@@ -90,11 +90,7 @@ export const aiService = {
       }
     } catch (error: any) {
       console.error('Erro Gemini:', {
-        message: error?.message,
-        status: error?.status,
-        statusText: error?.statusText,
-        details: error?.errorDetails,
-        response: error?.response?.data
+        message: error
       })
 
       throw new Error(getGeminiErrorMessage(error))

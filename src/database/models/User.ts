@@ -9,67 +9,54 @@ const userSchema = new Schema(
       lowercase: true,
       trim: true
     },
-
     password: {
       type: String,
       required: true
     },
-
     first_name: {
       type: String,
       default: null
     },
-
     last_name: {
       type: String,
       default: null
     },
-
     two_factor_enabled: {
       type: Boolean,
       default: false
     },
-
     two_factor_secret: {
       type: String,
       default: null
     },
-
     failed_login_attempts: {
       type: Number,
       default: 0
     },
-
     locked_until: {
       type: Date,
       default: null
     },
-
     last_login_at: {
       type: Date,
       default: null
     },
-
     reset_token: {
       type: String,
       default: null
     },
-
     reset_token_expires: {
       type: Number,
       default: null
     },
-
     consent: {
       type: Boolean,
       default: false
     },
-
     consent_date: {
       type: String,
       default: null
     },
-
     consent_version: {
       type: String,
       default: null

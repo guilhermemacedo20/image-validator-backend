@@ -2,21 +2,21 @@ import bcrypt from 'bcrypt'
 
 import { randomBytes, createHash } from 'crypto'
 
-import { env } from '../config/env.js'
+import { env } from '../../config/env.js'
 
-import { userRepository } from '../repositories/userRepository.js'
-import { authRepository } from '../repositories/authRepository.js'
+import { userRepository } from '../users/user.repository.js'
+import { authRepository } from './auth.repository.js'
 
-import { tokenService } from './tokenService.js'
-import { twoFactorService } from './twoFactorService.js'
-import { sendResetEmail } from './mailService.js'
+import { tokenService } from './token.service.js'
+import { twoFactorService } from '../security/two-factor.service.js'
+import { sendResetEmail } from '../security/mail.service.js'
 
-import { encrypt } from '../utils/crypto.js'
+import { encrypt } from '../../shared/utils/crypto.js'
 import {
   isValidEmail,
   isStrongPassword,
   isAccountLocked
-} from '../utils/validateInfo.js'
+} from '../../shared/utils/validateInfo.js'
 
 async function applyFailedLoginDelay(): Promise<void> {
   await new Promise<void>((resolve) => {

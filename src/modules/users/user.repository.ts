@@ -1,5 +1,5 @@
-import { UserModel } from '../database/models/User.js'
-import { normalizeMongoDocument } from '../utils/normalizaMongo.js'
+import { UserModel } from './user.model.js'
+import { normalizeMongoDocument } from '../../shared/utils/normalizaMongo.js'
 
 export const userRepository = {
   async create({

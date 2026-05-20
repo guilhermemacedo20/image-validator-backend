@@ -1,4 +1,4 @@
-import { TokenBlacklistModel } from '../database/models/TokenBlacklist.js'
+import { TokenBlacklistModel } from './token-blacklist.model.js'
 
 export const blackListRepository = {
   async add(token: string, expiresAt: string): Promise<boolean> {

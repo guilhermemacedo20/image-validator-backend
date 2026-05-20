@@ -1,186 +1,231 @@
-# 🔐 Secure Image Validator — Backend API
+# Secure Image Validator — Backend API
 
-## 📌 Visão Geral
+Backend em Node.js + TypeScript para autenticação segura de usuários, 2FA, recuperação de senha, auditoria, LGPD e análise de imagens com Gemini.
 
-O **Secure Image Validator** é um sistema back-end desenvolvido em Node.js responsável por autentação segura de usuários, análise de imagens via inteligência artificial e gerenciamento de dados conforme a LGPD.
+## Arquitetura adotada
 
-O sistema implementa mecanismos avançados de segurança, incluindo autenticação multifator (2FA), proteção contra ataques de força bruta e criptografia de dados sensíveis.
+O projeto foi reorganizado para uma **arquitetura em camadas modularizada**.
 
----
+A regra principal:
 
-## 🧠 Objetivo
-
-Garantir um ambiente seguro para:
-
-* Autenticação de usuários
-* Proteção de dados sensíveis
-* Validação de imagens utilizando IA
-* Conformidade com regulamentações de privacidade (LGPD)
-
----
-
-## 🏗️ Arquitetura
-
-A aplicação segue um padrão baseado em camadas:
-
-```
-Controller → Service → Repository → Database
+```txt
+Route -> Controller -> Service -> Repository -> Model/Database
 ```
 
-* **Controller:** Entrada das requisições
-* **Service:** Regras de negócio
-* **Repository:** Acesso ao banco
-* **Utils:** Criptografia e helpers
+Os arquivos ficam agrupados como `auth`, `users`, `ai`, `audit` e `security`.
 
----
+## Estrutura do projeto
 
-## 🚀 Tecnologias Utilizadas
-
-* Node.js
-* Express
-* Mongo
-* JWT (Access + Refresh Token)
-* bcrypt
-* speakeasy (2FA)
-* crypto (AES-256-CBC + SHA-256)
-
----
-
-## 🔐 Segurança Implementada
-
-* Hash de senha com bcrypt
-* Tokens JWT com expiração
-* Refresh token com blacklist
-* Autenticação em dois fatores (TOTP)
-* Proteção contra brute force
-* Criptografia AES para dados sensíveis
-* Tokens de reset com hash
-* Middleware HTTPS obrigatório
-
----
-
-## ⚖️ Conformidade com LGPD
-
-* Consentimento obrigatório no cadastro
-* Registro de versão e data do consentimento
-* Revogação de consentimento
-* Exportação de dados pessoais
-* Exclusão de conta
-* Minimização de dados
-
----
-
-## 📂 Estrutura do Projeto
-
-```
+```txt
 src/
- ├── controllers/
- ├── services/
- ├── repositories/
- ├── middleware/
- ├── routes/
- ├── utils/
- ├── database/
- └── app.js
+├── app.ts
+├── server.ts
+│
+├── config/
+│   └── env.ts
+│
+├── database/
+│   └── index.ts
+│
+├── modules/
+│   ├── ai/
+│   │   ├── ai.controller.ts
+│   │   ├── ai.routes.ts
+│   │   └── ai.service.ts
+│   │
+│   ├── audit/
+│   │   ├── audit.model.ts
+│   │   ├── audit.repository.ts
+│   │   └── audit.service.ts
+│   │
+│   ├── auth/
+│   │   ├── auth.controller.ts
+│   │   ├── auth.repository.ts
+│   │   ├── auth.routes.ts
+│   │   ├── auth.service.ts
+│   │   ├── refresh-token.model.ts
+│   │   └── token.service.ts
+│   │
+│   ├── security/
+│   │   ├── black-list.repository.ts
+│   │   ├── mail.service.ts
+│   │   ├── token-blacklist.model.ts
+│   │   └── two-factor.service.ts
+│   │
+│   └── users/
+│       ├── user.controller.ts
+│       ├── user.model.ts
+│       ├── user.repository.ts
+│       └── user.routes.ts
+│
+├── routes/
+│   └── index.ts
+│
+└── shared/
+    ├── middlewares/
+    │   └── auth.middleware.ts
+    │
+    ├── types/
+    └── utils/
 ```
 
----
+## Responsabilidade de cada camada
 
-## 🔑 Variáveis de Ambiente
+### Routes
 
-Crie um arquivo `.env`:
+Define os endpoints e os middlewares usados por cada rota.
 
+Exemplo:
+
+```txt
+POST /api/ai/analyze-image
 ```
-PORT=
+
+### Controller
+
+Recebe a requisição HTTP, valida dados básicos de entrada e chama o service.
+
+Exemplo no módulo de IA: o controller lê `x-gemini-api-key`, aceita `image` ou `imageBase64` no body e normaliza imagens em formato Data URL.
+
+### Service
+
+Contém as regras de negócio.
+
+Exemplo: o `ai.service.ts` valida a API Key, imagem, MIME type, chama o Gemini e normaliza o retorno.
+
+### Repository
+
+Isola o acesso ao banco de dados.
+
+Exemplo: `user.repository.ts`, `auth.repository.ts`, `audit.repository.ts`.
+
+### Model
+
+Define os schemas do MongoDB/Mongoose.
+
+Exemplo: `user.model.ts`, `refresh-token.model.ts`, `audit.model.ts`.
+
+### Shared
+
+Guarda itens reutilizáveis por vários módulos, como middlewares, tipos globais e funções utilitárias.
+
+## Variáveis de ambiente
+
+Crie um arquivo `.env` baseado no `.env.example`:
+
+```env
+PORT=3000
+NODE_ENV=development
 JWT_SECRET=
 JWT_REFRESH_SECRET=
-ACCESS_TOKEN_EXPIRES_IN=
-REFRESH_TOKEN_EXPIRES_IN=
-BCRYPT_ROUNDS=
-CRYPTO_SECRET=
+ACCESS_TOKEN_EXPIRES_IN=15m
+REFRESH_TOKEN_EXPIRES_IN=7d
+BCRYPT_ROUNDS=12
+EMAIL_USER=
+EMAIL_PASS=
+FRONT_URL=http://localhost:5173
+SECRET_KEY=
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-flash-latest
+MONGODB_URI=
 ```
 
----
+## Como rodar
 
-## ▶️ Como Rodar o Backend
+Instale as dependências:
 
-### 1. Instalar dependências
-
-```
+```bash
 npm install
 ```
 
-### 2. Rodar em desenvolvimento
+Rode em desenvolvimento:
 
-```
+```bash
 npm run dev
 ```
 
----
+Gere o build:
 
-## 🔗 Principais Rotas
-
-### 🔐 Autenticação
-
-* POST `/auth/register`
-* POST `/auth/login`
-* POST `/auth/refresh`
-* POST `/auth/logout`
-* GET `/auth/me`
-
-### 🔑 2FA
-
-* POST `/auth/2fa/setup`
-* POST `/auth/2fa/confirm`
-* POST `/auth/2fa/disable`
-
-### 🔁 Recuperação de senha
-
-* POST `/auth/forgot-password`
-* POST `/auth/reset-password`
-
-### 👤 LGPD
-
-* GET `/user/export`
-* POST `/user/revoke-consent`
-* DELETE `/user`
-
----
-
-## 📊 Logs e Auditoria
-
-O sistema registra:
-
-* Login e falhas
-* Ativação de 2FA
-* Reset de senha
-* Alterações de conta
-* Revogação de consentimento
-
----
-
-## 🧪 Testes
-
-```
-npm run test
+```bash
+npm run build
 ```
 
----
+Rode em produção:
 
-## ⚠️ Segurança
+```bash
+npm start
+```
 
-* Nunca subir `.env`
-* Utilizar HTTPS em produção
-* Proteger tokens e chaves criptográficas
+## Rotas principais
 
----
+Todas as rotas usam o prefixo `/api`.
 
-## 👨‍💻 Autor
+### Autenticação
 
-Projeto acadêmico focado em segurança da informação, autenticação forte e LGPD.
-Idealizado e realizado por:
+```txt
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/refresh
+POST /api/auth/logout
+GET  /api/auth/me
+```
 
-- LUIZ EDUARDO DIAS
-- Guilherme Aires Pimenta de Macedo
-- FABRÍCIO ROCHA DE SOUZA
-- MARIANA DA ROCHA PEREIRA MOREIRA
+### 2FA
+
+```txt
+POST /api/auth/2fa/setup
+POST /api/auth/2fa/confirm
+POST /api/auth/2fa/disable
+```
+
+### Recuperação de senha
+
+```txt
+POST /api/auth/forgot-password
+POST /api/auth/reset-password
+```
+
+### Usuário/LGPD
+
+```txt
+PUT    /api/user/profile
+GET    /api/user/export
+POST   /api/user/revoke-consent
+DELETE /api/user
+```
+
+### IA
+
+```txt
+POST /api/ai/analyze-image
+```
+
+Headers:
+
+```txt
+Authorization: Bearer <access_token>
+x-gemini-api-key: <sua_api_key_do_gemini>
+```
+
+Body aceito:
+
+```json
+{
+  "image": "data:image/png;base64,..."
+}
+```
+
+ou:
+
+```json
+{
+  "imageBase64": "...",
+  "mimeType": "image/png"
+}
+```
+
+## Observações de segurança
+
+- Não suba o arquivo `.env` para o GitHub.
+- Em produção, use secrets do Render/Vercel/GitHub Actions.
+- Evite expor `GEMINI_API_KEY` fixa no frontend.

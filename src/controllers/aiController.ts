@@ -23,7 +23,7 @@ export const aiController = {
 
       if (!geminiApiKey) {
         return res.status(400).json({
-          error: 'API Key do Gemini não informada.'
+          error: 'API Key do Gemini não declarada.'
         })
       }
 

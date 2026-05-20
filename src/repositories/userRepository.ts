@@ -7,22 +7,16 @@ export const userRepository = {
     password,
     firstName = null,
     lastName = null,
-    phone = null,
-    address = null,
     consent = false,
-    consentDate = null,
-    consentVersion = null
+    consentDate = null
   }: CreateUserParams): Promise<Pick<User, 'id' | 'email'>> {
     const user = await UserModel.create({
       email,
       password,
       first_name: firstName,
       last_name: lastName,
-      phone,
-      address,
       consent,
       consent_date: consentDate,
-      consent_version: consentVersion
     })
 
     return {
@@ -134,13 +128,11 @@ export const userRepository = {
     {
       consent,
       consentDate = null,
-      consentVersion = null
     }: UpdateConsentParams
   ): Promise<boolean> {
     await UserModel.findByIdAndUpdate(userId, {
       consent,
-      consent_date: consentDate,
-      consent_version: consentVersion
+      consent_date: consentDate
     })
 
     return true

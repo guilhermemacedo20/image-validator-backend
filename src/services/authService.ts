@@ -12,25 +12,11 @@ import { twoFactorService } from './twoFactorService.js'
 import { sendResetEmail } from './mailService.js'
 
 import { encrypt } from '../utils/crypto.js'
-
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
-
-function isStrongPassword(password: string): boolean {
-  return (
-    typeof password === 'string' &&
-    password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /\d/.test(password) &&
-    /[^A-Za-z0-9]/.test(password)
-  )
-}
-
-function isAccountLocked(user: User): boolean {
-  return Boolean(user.locked_until && new Date(user.locked_until) > new Date())
-}
+import {
+  isValidEmail,
+  isStrongPassword,
+  isAccountLocked
+} from '../utils/validateInfo.js'
 
 async function applyFailedLoginDelay(): Promise<void> {
   await new Promise<void>((resolve) => {
@@ -70,14 +56,9 @@ export const authService = {
 
     const user = await userRepository.create({
       email: normalizedEmail,
-
       password: hash,
-
       consent: true,
-
-      consentDate: new Date().toISOString(),
-
-      consentVersion: '1.0'
+      consentDate: new Date().toISOString()
     })
 
     return user
@@ -175,11 +156,8 @@ export const authService = {
 
     return {
       requiresTwoFactor: false,
-
       accessToken,
-
       refreshToken,
-
       user: payload
     }
   },

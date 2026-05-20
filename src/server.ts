@@ -6,7 +6,7 @@ import { connectDatabase } from './database/index.js'
 
 import { blackListRepository } from './repositories/blackListRepository.js'
 
-async function bootstrap() {
+async function server() {
   try {
     await connectDatabase()
     await blackListRepository.cleanupExpired()
@@ -21,4 +21,4 @@ async function bootstrap() {
   }
 }
 
-bootstrap()
+server()

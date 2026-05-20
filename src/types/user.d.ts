@@ -4,8 +4,6 @@ interface User {
   password: string
   first_name?: string | null
   last_name?: string | null
-  phone?: string | null
-  address?: string | null
   two_factor_enabled?: boolean
   two_factor_secret?: string | null
   failed_login_attempts?: number
@@ -25,11 +23,8 @@ interface CreateUserParams {
   password: string
   firstName?: string | null
   lastName?: string | null
-  phone?: string | null
-  address?: string | null
   consent?: boolean
   consentDate?: string | null
-  consentVersion?: string | null
 }
 
 interface UpdateProfileParams {
@@ -41,6 +36,4 @@ interface UpdateConsentParams {
   consent: boolean
 
   consentDate?: string | null
-
-  consentVersion?: string | null
 }

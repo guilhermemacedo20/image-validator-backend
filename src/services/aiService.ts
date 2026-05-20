@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getGeminiErrorMessage } from '../utils/geminiErrors.js'
 
 const modelType = process.env.GEMINI_MODEL
 
@@ -8,7 +9,6 @@ export const aiService = {
     mimeType: string,
     geminiApiKey: string
   ): Promise<AIAnalysisResult> {
-
     try {
       const genAI = new GoogleGenerativeAI(geminiApiKey)
 
@@ -73,35 +73,11 @@ export const aiService = {
         ...parsed
       }
     } catch (error: any) {
-      console.error('Erro Gemini:', error)
+      console.error('Erro Gemini:', {
+        message: error
+      })
 
-      const errorMessage = error?.message || ''
-
-      if (
-        errorMessage.includes('API_KEY_INVALID') ||
-        errorMessage.includes('API key not valid')
-      ) {
-        throw new Error('API Key do Gemini inválida ou não encontrada')
-      }
-
-      if (
-        errorMessage.toLowerCase().includes('quota') ||
-        errorMessage.includes('RESOURCE_EXHAUSTED')
-      ) {
-        throw new Error('Limite de uso da API Gemini excedido')
-      }
-
-      if (errorMessage.includes('429')) {
-        throw new Error(
-          'Muitas requisições para o Gemini. Tente novamente em instantes'
-        )
-      }
-
-      if (errorMessage.includes('404')) {
-        throw new Error('Modelo Gemini não encontrado ou indisponível')
-      }
-
-      throw new Error('Erro ao comunicar com a API do Gemini')
+      throw new Error(getGeminiErrorMessage(error))
     }
   }
 }

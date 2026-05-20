@@ -2,34 +2,28 @@ import nodemailer from 'nodemailer'
 
 import { env } from '../config/env.js'
 
-const transporter =
-  nodemailer.createTransport({
-    service: 'gmail',
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
 
-    auth: {
-      user: env.EMAIL_USER,
+  auth: {
+    user: env.EMAIL_USER,
 
-      pass: env.EMAIL_PASS
-    }
-  })
+    pass: env.EMAIL_PASS
+  }
+})
 
 export async function sendResetEmail(
   email: string,
   token: string
 ): Promise<void> {
-
-  const link =
-    `${env.FRONT_URL}/reset-password?token=${token}`
+  const link = `${env.FRONT_URL}/reset-password?token=${token}`
 
   await transporter.sendMail({
-
-    from:
-      `"Segurança" <${env.EMAIL_USER}>`,
+    from: `"Segurança" <${env.EMAIL_USER}>`,
 
     to: email,
 
-    subject:
-      'Recuperação de senha',
+    subject: 'Recuperação de senha',
 
     html: `
       <div style="font-family: Arial; padding: 20px">

@@ -4,10 +4,10 @@ import jwt, {
   type SignOptions
 } from 'jsonwebtoken'
 
-import { env } from '../../config/env.js'
+import { env } from '../config/env.js'
 
-import { authRepository } from './auth.repository.js'
-import { blackListRepository } from '../security/black-list.repository.js'
+import { authRepository } from '../repositories/authRepository.js'
+import { blackListRepository } from '../repositories/blackListRepository.js'
 
 function parseExpiryToDate(expiresIn: string | number): string {
   const now = new Date()

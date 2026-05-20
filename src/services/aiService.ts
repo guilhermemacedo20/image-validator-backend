@@ -1,11 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getGeminiErrorMessage } from '../utils/geminiErrors.js'
 
-import { env } from '../../config/env.js'
-import { getGeminiErrorMessage } from '../../shared/utils/geminiErrors.js'
-
-function sanitizeBase64(imageBase64: string): string {
-  return imageBase64.replace(/^data:.+;base64,/, '').trim()
-}
+const modelType = process.env.GEMINI_MODEL
 
 export const aiService = {
   async analyzeImage(
@@ -13,23 +9,11 @@ export const aiService = {
     mimeType: string,
     geminiApiKey: string
   ): Promise<AIAnalysisResult> {
-    if (!geminiApiKey) {
-      throw new Error('API Key do Gemini não encontrada. Informe uma chave válida para continuar.')
-    }
-
-    if (!imageBase64) {
-      throw new Error('Imagem não enviada.')
-    }
-
-    if (!mimeType) {
-      throw new Error('Tipo da imagem não informado.')
-    }
-
     try {
       const genAI = new GoogleGenerativeAI(geminiApiKey)
 
       const model = genAI.getGenerativeModel({
-        model: env.GEMINI_MODEL,
+        model: modelType || 'gemini-flash-latest',
         generationConfig: {
           responseMimeType: 'application/json'
         }
@@ -64,7 +48,7 @@ export const aiService = {
         {
           inlineData: {
             mimeType,
-            data: sanitizeBase64(imageBase64)
+            data: imageBase64
           }
         }
       ])

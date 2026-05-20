@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
-import { tokenService } from '../../modules/auth/token.service.js'
+import { tokenService } from '../services/tokenService.js'
 
 export const authMiddleware = async (
   req: Request,

@@ -1,4 +1,4 @@
-import { RefreshTokenModel } from './refresh-token.model.js'
+import { RefreshTokenModel } from '../database/models/RefreshToken.js'
 
 interface RefreshTokenRow {
   id: string

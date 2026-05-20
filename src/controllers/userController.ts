@@ -1,6 +1,6 @@
-import { userRepository } from './user.repository.js'
-import { logService } from '../audit/audit.service.js'
-import { authRepository } from '../auth/auth.repository.js'
+import { userRepository } from '../repositories/userRepository.js'
+import { logService } from '../services/logService.js'
+import { authRepository } from '../repositories/authRepository.js'
 
 function serializeUser(user: any) {
   return {

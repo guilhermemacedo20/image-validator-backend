@@ -1,5 +1,5 @@
 import request from "supertest"
-import app from "../app.js"
+import app from "../src/app.js"
 
 describe("Auth", () => {
   it("should fail with wrong credentials", async () => {

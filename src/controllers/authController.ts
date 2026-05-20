@@ -1,7 +1,7 @@
-import { authService } from './auth.service.js'
-import { twoFactorService } from '../security/two-factor.service.js'
-import { userRepository } from '../users/user.repository.js'
-import { logService } from '../audit/audit.service.js'
+import { authService } from '../services/authService.js'
+import { twoFactorService } from '../services/twoFactorService.js'
+import { userRepository } from '../repositories/userRepository.js'
+import { logService } from '../services/logService.js'
 
 export const authController = {
   async register(req: any, res: any) {

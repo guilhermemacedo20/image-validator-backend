@@ -1,7 +1,7 @@
 import speakeasy from 'speakeasy'
 import QRCode from 'qrcode'
 
-import { userRepository } from '../users/user.repository.js'
+import { userRepository } from '../repositories/userRepository.js'
 
 export const twoFactorService = {
   async setup(user: UserWithTwoFactor): Promise<TwoFactorSetupResult> {

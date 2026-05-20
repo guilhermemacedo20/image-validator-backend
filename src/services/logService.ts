@@ -1,6 +1,6 @@
 import type { Request } from 'express'
 
-import { logRepository } from './audit.repository.js'
+import { logRepository } from '../repositories/logRepository.js'
 
 export const logService = {
   async write(

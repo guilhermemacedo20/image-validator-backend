@@ -4,7 +4,7 @@ import { env } from './config/env.js'
 
 import { connectDatabase } from './database/index.js'
 
-import { blackListRepository } from './modules/security/black-list.repository.js'
+import { blackListRepository } from './repositories/blackListRepository.js'
 
 async function server() {
   try {

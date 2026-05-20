@@ -4,7 +4,7 @@ Backend em Node.js + TypeScript para autenticação segura de usuários, 2FA, re
 
 ## Arquitetura adotada
 
-O projeto foi reorganizado para uma **arquitetura em camadas modularizada**.
+O projeto foi organizado para uma **arquitetura em camadas modularizada**.
 
 A regra principal:
 

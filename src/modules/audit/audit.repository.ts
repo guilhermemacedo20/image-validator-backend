@@ -9,6 +9,7 @@ interface CreateLogParams {
   metadata?: unknown
 }
 
+// repositório para criação de logs de auditoria no banco de dados.
 export const logRepository = {
   async create({
     userId = null,

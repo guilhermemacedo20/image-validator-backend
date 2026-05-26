@@ -1,5 +1,6 @@
 import mongoose, { Schema, type InferSchemaType } from 'mongoose'
 
+// definição do esquema para os logs de auditoria no banco de dados.
 const auditLogSchema = new Schema(
   {
     user_id: {

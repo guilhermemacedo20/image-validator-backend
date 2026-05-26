@@ -2,6 +2,7 @@ import type { Request } from 'express'
 
 import { logRepository } from './audit.repository.js'
 
+// serviço para escrita de logs de auditoria.
 export const logService = {
   async write(
     req: Request,

@@ -25,6 +25,7 @@ async function applyFailedLoginDelay(): Promise<void> {
 }
 
 export const authService = {
+  // função para registrar um novo usuário, incluindo validação de email e senha, hash da senha, e persistência no banco de dados.
   async register({ email, password, consent = false }: RegisterParams) {
     const normalizedEmail = String(email || '')
       .trim()
@@ -64,6 +65,7 @@ export const authService = {
     return user
   },
 
+  // função para autenticar um usuário, incluindo verificação de credenciais, gerenciamento de autenticação de dois fatores (2FA), geração de tokens de acesso e refresh, e persistência de refresh tokens no banco de dados.
   async login({
     email,
     password,
@@ -162,6 +164,7 @@ export const authService = {
     }
   },
 
+  // função para lidar com o processo de esquecimento de senha, incluindo geração de token de reset, persistência do token no banco de dados, e envio de email para o usuário.
   async forgotPassword(email: string): Promise<boolean> {
     const normalizedEmail = String(email || '')
       .trim()
@@ -186,6 +189,7 @@ export const authService = {
     return true
   },
 
+  // função para lidar com o processo de reset de senha, incluindo validação do token de reset, hash da nova senha, atualização da senha no banco de dados, e revogação de tokens de acesso e refresh existentes.
   async resetPassword(token: string, newPassword: string): Promise<boolean> {
     if (!isStrongPassword(newPassword)) {
       throw new Error('Senha não atende aos requisitos de segurança')
@@ -214,6 +218,7 @@ export const authService = {
     return true
   },
 
+  // função para lidar com o refresh de tokens, incluindo validação do refresh token, geração de novos tokens de acesso e refresh, e persistência do novo refresh token no banco de dados.
   async refresh(refreshToken: string) {
     if (!refreshToken) {
       throw new Error('Refresh token não informado')
@@ -229,6 +234,7 @@ export const authService = {
     })
   },
 
+  // função para lidar com o logout de usuários, revogando tokens de acesso e refresh.
   async logout(accessToken?: string, refreshToken?: string): Promise<boolean> {
     if (accessToken) {
       await tokenService.blacklistAccessToken(accessToken)

@@ -3,10 +3,12 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { env } from '../../config/env.js'
 import { getGeminiErrorMessage } from '../../shared/utils/geminiErrors.js'
 
+// função para sanitizar a string base64, removendo o prefixo data URL se presente.
 function sanitizeBase64(imageBase64: string): string {
   return imageBase64.replace(/^data:.+;base64,/, '').trim()
 }
 
+// serviço para análise de imagens usando a API do Gemini.
 export const aiService = {
   async analyzeImage(
     imageBase64: string,

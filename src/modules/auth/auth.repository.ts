@@ -8,6 +8,7 @@ interface RefreshTokenRow {
   revoked: boolean
 }
 
+// função auxiliar para normalizar os dados do refresh token retornados do banco de dados.
 function normalizeRefreshToken(document: any): RefreshTokenRow | null {
   if (!document) return null
 
@@ -21,6 +22,7 @@ function normalizeRefreshToken(document: any): RefreshTokenRow | null {
 }
 
 export const authRepository = {
+  // função para salvar um novo refresh token no banco de dados.
   async saveRefreshToken(
     userId: string,
     token: string,
@@ -36,6 +38,7 @@ export const authRepository = {
     return true
   },
 
+  // função para encontrar um refresh token válido no banco de dados usando o token string.
   async findRefreshToken(
     token: string
   ): Promise<RefreshTokenRow | null> {
@@ -45,6 +48,7 @@ export const authRepository = {
     return normalizeRefreshToken(refreshToken)
   },
 
+  // função para revogar um refresh token específico no banco de dados.
   async revokeRefreshToken(token: string): Promise<boolean> {
     await RefreshTokenModel.updateOne(
       { token },
@@ -56,6 +60,7 @@ export const authRepository = {
     return true
   },
 
+  // função para revogar todos os refresh tokens de um usuário específico no banco de dados.
   async revokeAllUserRefreshTokens(
     userId: string
   ): Promise<boolean> {

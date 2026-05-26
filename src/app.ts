@@ -15,6 +15,7 @@ app.use((req, res, next) => {
   next()
 })
 
+// configuração de limitação de taxa para proteger a aplicação contra ataques de negação de serviço.
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
@@ -23,6 +24,7 @@ const globalLimiter = rateLimit({
   message: { error: 'Muitas requisições. Tente novamente em alguns minutos.' },
 })
 
+// configuração de limitação de taxa específica para rotas de autenticação.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,

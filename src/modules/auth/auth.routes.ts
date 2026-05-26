@@ -5,6 +5,7 @@ import { userController } from '../users/user.controller.js'
 
 const router = Router()
 
+// rota para registro, login, refresh de tokens, logout, obtenção de dados do usuário autenticado e gerenciamento de autenticação de dois fatores (2FA).
 router.post('/register', authController.register)
 router.post('/login', authController.login)
 router.post('/refresh', authController.refresh)

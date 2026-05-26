@@ -1,6 +1,7 @@
 import { TokenBlacklistModel } from './token-blacklist.model.js'
 
 export const blackListRepository = {
+  // função para adicionar um token de acesso à blacklist.
   async add(token: string, expiresAt: string): Promise<boolean> {
     await TokenBlacklistModel.updateOne(
       { token },
@@ -16,6 +17,7 @@ export const blackListRepository = {
     return true
   },
 
+  // função para verificar se um token de acesso está na blacklist.
   async exists(token: string): Promise<boolean> {
     const item = await TokenBlacklistModel.exists({
       token
@@ -24,6 +26,7 @@ export const blackListRepository = {
     return Boolean(item)
   },
 
+  // função para limpar tokens expirados da blacklist.
   async cleanupExpired(): Promise<boolean> {
     await TokenBlacklistModel.deleteMany({
       expires_at: {

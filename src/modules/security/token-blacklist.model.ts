@@ -1,5 +1,6 @@
 import mongoose, { Schema, type InferSchemaType } from 'mongoose'
 
+// definição do esquema para a blacklist de tokens de acesso no banco de dados.
 const tokenBlacklistSchema = new Schema(
   {
     token: {

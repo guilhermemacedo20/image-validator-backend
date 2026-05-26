@@ -4,6 +4,7 @@ import QRCode from 'qrcode'
 import { userRepository } from '../users/user.repository.js'
 
 export const twoFactorService = {
+  // função para configurar a autenticação de dois fatores (2FA) para um usuário, gerando um segredo e um QR code para configuração no aplicativo autenticador.
   async setup(user: UserWithTwoFactor): Promise<TwoFactorSetupResult> {
     const secret = speakeasy.generateSecret({
       name: `SecureImageValidator (${user.email})`
@@ -24,6 +25,7 @@ export const twoFactorService = {
     }
   },
 
+  // função para verificar um token de autenticação de dois fatores (2FA) usando o segredo armazenado para o usuário.
   verify(secret: string, token: string | number): boolean {
     return speakeasy.totp.verify({
       secret,
@@ -37,6 +39,7 @@ export const twoFactorService = {
     })
   },
 
+  // função para confirmar a ativação da autenticação de dois fatores (2FA) para um usuário.
   async confirmActivation(
     userId: string,
     token: string | number
@@ -60,6 +63,7 @@ export const twoFactorService = {
     return true
   },
 
+  // função para desabilitar a autenticação de dois fatores (2FA) para um usuário.
   async disable(userId: string): Promise<boolean> {
     await userRepository.disableTwoFactor(userId)
 

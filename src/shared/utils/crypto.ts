@@ -4,6 +4,7 @@ import { env } from '../../config/env.js'
 
 const algorithm = 'aes-256-cbc'
 
+// função para gerar uma chave de criptografia a partir da variável de ambiente SECRET_KEY usando SHA-256.
 function getKey(): Buffer {
   return crypto
     .createHash('sha256')
@@ -13,6 +14,7 @@ function getKey(): Buffer {
     .digest()
 }
 
+// função para criptografar um texto usando AES-256-CBC, gerando um vetor de inicialização (IV) aleatório e retornando o resultado no formato "iv:encrypted".
 export function encrypt(text: string | null | undefined): string | null {
   if (text === null || text === undefined || text === '') {
     return null
@@ -29,6 +31,7 @@ export function encrypt(text: string | null | undefined): string | null {
   return `${iv.toString('hex')}:${encrypted}`
 }
 
+// função para descriptografar um texto criptografado no formato "iv:encrypted" usando AES-256-CBC.
 export function decrypt(text: string | null | undefined): string {
   if (!text) {
     return ''

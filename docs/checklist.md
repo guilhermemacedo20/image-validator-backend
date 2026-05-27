@@ -8,12 +8,12 @@
 - [x] 1.4 - Armazenamento correto do hash + salt
 - [x] 1.5 - Autenticação de dois fatores (2FA) implementada
 - [x] 1.6 - Validação do 2FA após autenticação primária
-- [ ] 1.7 - Fluxo de autenticação documentado
+- [x] 1.7 - Fluxo de autenticação documentado
 - [x] 1.8 - Evidências funcionais (prints, logs ou testes)
 - [x] 1.9 - Sessões com tempo de expiração
 - [x] 1.10 - Invalidação de sessão no logout
 - [x] 1.11 - Proteção contra força bruta (rate limit, bloqueio, atraso)
-- [ ] 1.12 - Justificativas técnicas documentadas
+- [x] 1.12 - Justificativas técnicas documentadas
 
 ---
 
@@ -33,28 +33,28 @@
 
 - [x] 3.1 - Comunicação protegida por TLS/HTTPS
 - [x] 3.2 - Bloqueio de conexões não seguras
-- [ ] 3.3 - Evidência de tráfego cifrado
+- [x] 3.3 - Evidência de tráfego cifrado
 - [x] 3.4 - Dados sensíveis criptografados em repouso
 - [x] 3.5 - Uso de algoritmo criptográfico adequado (ex.: AES)
 - [x] 3.6 - Chaves criptográficas protegidas
-- [ ] 3.7 - Estratégia de criptografia documentada
-- [ ] 3.8 - Justificativa técnica das escolhas
+- [x] 3.7 - Estratégia de criptografia documentada
+- [x] 3.8 - Justificativa técnica das escolhas
 
 ---
 
 ## 4. Conformidade com a LGPD
 
-- [ ] 4.1 - Listagem completa dos dados pessoais coletados
-- [ ] 4.2 - Associação de cada dado a uma finalidade
-- [ ] 4.3 - Evidência de minimização de dados
+- [x] 4.1 - Listagem completa dos dados pessoais coletados
+- [x] 4.2 - Associação de cada dado a uma finalidade
+- [x] 4.3 - Evidência de minimização de dados
 - [x] 4.4 - Registro explícito de consentimento
 - [x] 4.5 - Consentimento associado à finalidade
 - [x] 4.6 - Possibilidade de revogação do consentimento
 - [x] 4.7 - Registro de data e versão do consentimento
-- [ ] 4.8 - Funcionalidade de consulta aos dados do titular
+- [x] 4.8 - Funcionalidade de consulta aos dados do titular
 - [x] 4.9 - Funcionalidade de exportação dos dados
 - [x] 4.10 - Funcionalidade de exclusão dos dados pessoais
-- [ ] 4.11 - Fluxo de atendimento aos direitos documentado
+- [x] 4.11 - Fluxo de atendimento aos direitos documentado
 
 ---
 
@@ -62,8 +62,8 @@
 
 - [x] 5.1 - Logs de autenticação registrados
 - [x] 5.2 - Logs de falhas e 2FA registrados
-- [ ] 5.3 - Proteção contra alteração dos logs
-- [ ] 5.4 - Exemplo de análise de logs apresentado
+- [x] 5.3 - Proteção contra alteração dos logs
+- [x] 5.4 - Exemplo de análise de logs apresentado
 
 ---
 
@@ -75,12 +75,12 @@
 - [x] 6.4 - Gestão de credenciais documentada
 - [x] 6.5 - Uso de criptografia documentado
 - [x] 6.6 - Identificação dos ativos do sistema
-- [ ] 6.7 - Identificação de ameaças e vulnerabilidades
-- [ ] 6.8 - Associação risco × contramedida
-- [ ] 6.9 - Testes de segurança realizados
-- [ ] 6.10 - Resultados dos testes documentados
-- [ ] 6.11 - Uso de artigos científicos e/ou normas técnicas
-- [ ] 6.12 - Referências normalizadas
+- [x] 6.7 - Identificação de ameaças e vulnerabilidades
+- [x] 6.8 - Associação risco × contramedida
+- [x] 6.9 - Testes de segurança realizados
+- [x] 6.10 - Resultados dos testes documentados
+- [x] 6.11 - Uso de artigos científicos e/ou normas técnicas
+- [x] 6.12 - Referências normalizadas
 
 ---
 

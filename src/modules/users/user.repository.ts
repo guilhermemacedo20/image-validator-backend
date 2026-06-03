@@ -2,7 +2,6 @@ import { UserModel } from './user.model.js'
 import { normalizeMongoDocument } from '../../shared/utils/normalizaMongo.js'
 
 export const userRepository = {
-  // função para criar um novo usuário no banco de dados.
   async create({
     email,
     password,
@@ -26,7 +25,6 @@ export const userRepository = {
     }
   },
 
-  // função para encontrar um usuário no banco de dados usando o email.
   async findByEmail(email: string): Promise<User | null> {
     const user = await UserModel.findOne({
       email: email.toLowerCase().trim()
@@ -35,14 +33,12 @@ export const userRepository = {
     return normalizeMongoDocument(user) as User | null
   },
 
-  // função para encontrar um usuário no banco de dados usando o ID.
   async findById(id: string): Promise<User | null> {
     const user = await UserModel.findById(id).lean()
 
     return normalizeMongoDocument(user) as User | null
   },
 
-  // função para encontrar um usuário no banco de dados usando o token de reset de senha.
   async saveResetToken(
     userId: string,
     token: string,
@@ -56,7 +52,6 @@ export const userRepository = {
     return true
   },
 
-  // função para encontrar um usuário no banco de dados usando o token de reset de senha.
   async findByToken(token: string): Promise<User | null> {
     const user = await UserModel.findOne({
       reset_token: token
@@ -65,7 +60,6 @@ export const userRepository = {
     return normalizeMongoDocument(user) as User | null
   },
 
-  // função para limpar o token de reset de senha de um usuário no banco de dados.
   async clearResetToken(userId: string): Promise<boolean> {
     await UserModel.findByIdAndUpdate(userId, {
       reset_token: null,
@@ -75,7 +69,6 @@ export const userRepository = {
     return true
   },
 
-  // função para atualizar a senha de um usuário no banco de dados.
   async updatePassword(
     userId: string,
     password: string
@@ -87,7 +80,6 @@ export const userRepository = {
     return true
   },
 
-  // função para atualizar o perfil de um usuário no banco de dados.
   async updateProfile(
     userId: string,
     {
@@ -103,7 +95,6 @@ export const userRepository = {
     return true
   },
 
-  // função para configurar o segredo de autenticação de dois fatores (2FA) para um usuário no banco de dados.
   async setTwoFactorSecret(
     userId: string,
     secret: string
@@ -115,7 +106,6 @@ export const userRepository = {
     return true
   },
 
-  // função para habilitar a autenticação de dois fatores (2FA) para um usuário no banco de dados.
   async enableTwoFactor(userId: string): Promise<boolean> {
     await UserModel.findByIdAndUpdate(userId, {
       two_factor_enabled: true
@@ -124,7 +114,6 @@ export const userRepository = {
     return true
   },
 
-  // função para desabilitar a autenticação de dois fatores (2FA) para um usuário no banco de dados.
   async disableTwoFactor(userId: string): Promise<boolean> {
     await UserModel.findByIdAndUpdate(userId, {
       two_factor_enabled: false,
@@ -134,7 +123,6 @@ export const userRepository = {
     return true
   },
 
-  // função para atualizar o consentimento do usuário para o processamento de dados pessoais no banco de dados.
   async updateConsent(
     userId: string,
     {
@@ -150,14 +138,12 @@ export const userRepository = {
     return true
   },
 
-  // função para excluir um usuário do banco de dados.
   async deleteById(userId: string): Promise<boolean> {
     await UserModel.findByIdAndDelete(userId)
 
     return true
   },
 
-  // função para registrar uma tentativa de login falhada para um usuário, incrementando o contador de tentativas e bloqueando a conta temporariamente se o número de tentativas exceder um limite.
   async registerFailedLogin(
     userId: string,
     lockMinutes = 15
@@ -187,7 +173,6 @@ export const userRepository = {
     return true
   },
 
-  // função para resetar o contador de tentativas de login falhadas e desbloquear a conta de um usuário.
   async resetLoginFailures(userId: string): Promise<boolean> {
     await UserModel.findByIdAndUpdate(userId, {
       failed_login_attempts: 0,

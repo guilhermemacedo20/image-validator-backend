@@ -16,7 +16,6 @@ function serializeUser(user: any) {
 }
 
 export const userController = {
-  // controlador para retornar os dados do perfil do usuário autenticado.
    async me(req: any, res: any) {
     try {
       const user = await userRepository.findById(req.user.id)
@@ -30,7 +29,6 @@ export const userController = {
     }
   },
 
-  // controlador para atualizar os dados do perfil do usuário autenticado.
   async updateProfile(req: any, res: any) {
     try {
       const { firstName, lastName } = req.body
@@ -70,7 +68,6 @@ export const userController = {
     }
   },
 
-  // controlador para atualizar o consentimento do usuário autenticado para o processamento de dados pessoais.
   async exportData(req: any, res: any) {
     try {
       const user = await userRepository.findById(req.user.id)
@@ -97,7 +94,6 @@ export const userController = {
     }
   },
 
-  // controlador para revogar o consentimento do usuário autenticado para o processamento de dados pessoais.
   async revokeConsent(req: any, res: any) {
     try {
       await userRepository.updateConsent(req.user.id, {
@@ -126,8 +122,6 @@ export const userController = {
     }
   },
 
-
-  // controlador para excluir a conta do usuário autenticado, revogando todos os tokens de acesso e refresh tokens associados.
   async deleteAccount(req: any, res: any) {
     try {
       await authRepository.revokeAllUserRefreshTokens(req.user.id)

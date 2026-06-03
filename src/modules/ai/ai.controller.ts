@@ -2,7 +2,6 @@ import type { Request, Response } from 'express'
 
 import { aiService } from './ai.service.js'
 
-// função para normalizar o payload da imagem, extraindo a string base64 e o tipo MIME.
 function normalizeImagePayload(body: any) {
   const rawImage = body?.imageBase64 || body?.image
   let imageBase64 = typeof rawImage === 'string' ? rawImage.trim() : ''
@@ -21,7 +20,6 @@ function normalizeImagePayload(body: any) {
   }
 }
 
-// função para extrair a API Key do Gemini dos headers da requisição.
 function getGeminiApiKey(req: Request): string {
   const headerValue = req.headers['x-gemini-api-key']
 
@@ -32,7 +30,6 @@ function getGeminiApiKey(req: Request): string {
   return headerValue || ''
 }
 
-// controlador para lidar com a análise de imagens usando a API do Gemini.
 export const aiController = {
   async analyzeImage(req: Request, res: Response) {
     try {

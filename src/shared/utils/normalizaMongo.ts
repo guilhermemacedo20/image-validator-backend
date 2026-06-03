@@ -1,4 +1,3 @@
-// função para normalizar documentos do MongoDB, convertendo o campo _id para id e retornando um novo objeto com os dados do documento.
 export function normalizeMongoDocument<T extends { _id?: unknown }>(
   document: T | null
 ) {

@@ -1,6 +1,5 @@
 import mongoose, { Schema, type InferSchemaType } from 'mongoose'
 
-// definição do esquema para os usuários no banco de dados.
 const userSchema = new Schema(
   {
     email: {

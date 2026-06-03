@@ -9,7 +9,6 @@ import { env } from '../../config/env.js'
 import { authRepository } from './auth.repository.js'
 import { blackListRepository } from '../security/black-list.repository.js'
 
-// função para calcular a data de expiração com base em uma string de duração (ex: "7d", "24h") ou um número de segundos.
 function parseExpiryToDate(expiresIn: string | number): string {
   const now = new Date()
 
@@ -51,8 +50,6 @@ function parseExpiryToDate(expiresIn: string | number): string {
 }
 
 export const tokenService = {
-
-  // função para gerar um token de acesso JWT com um payload específico e configuração de expiração.
   generateAccessToken(payload: TokenPayload): string {
     return jwt.sign(
       payload,
@@ -65,7 +62,6 @@ export const tokenService = {
     )
   },
 
-  // função para gerar um token de refresh JWT com um payload específico e configuração de expiração.
   generateRefreshToken(payload: TokenPayload): string {
     return jwt.sign(
       payload,
@@ -78,7 +74,6 @@ export const tokenService = {
     )
   },
 
-  // função para gerar um token de autenticação de dois fatores (2FA) JWT com um payload específico e configuração de expiração.
   generateTwoFactorToken(payload: TokenPayload): string {
     return jwt.sign(
       {
@@ -95,12 +90,10 @@ export const tokenService = {
     )
   },
 
-  // função para verificar a validade de um token de acesso JWT e retornar seu payload decodificado.
   verifyAccessToken(token: string): JwtPayload {
     return jwt.verify(token, env.JWT_SECRET as Secret) as JwtPayload
   },
 
-  // função para verificar a validade de um token de refresh JWT e retornar seu payload decodificado.
   verifyRefreshToken(token: string): JwtPayload {
     return jwt.verify(
       token,
@@ -109,7 +102,6 @@ export const tokenService = {
     ) as JwtPayload
   },
 
-  // função para verificar a validade de um token de autenticação de dois fatores (2FA) JWT e retornar seu payload decodificado.
   verifyTwoFactorToken(token: string): TwoFactorPayload {
     const decoded = jwt.verify(
       token,
@@ -123,7 +115,6 @@ export const tokenService = {
     return decoded
   },
 
-  // função para persistir um refresh token no banco de dados.
   async persistRefreshToken(
     userId: string,
     refreshToken: string
@@ -133,7 +124,6 @@ export const tokenService = {
     await authRepository.saveRefreshToken(userId, refreshToken, expiresAt)
   },
 
-  // função para lidar com o processo de refresh de tokens, incluindo validação do refresh token.
   async rotateRefreshToken(oldToken: string, payload: TokenPayload) {
     const stored = (await authRepository.findRefreshToken(
       oldToken
@@ -162,7 +152,6 @@ export const tokenService = {
     }
   },
 
-  // função para adicionar um token de acesso à blacklist, impedindo seu uso futuro.
   async blacklistAccessToken(token: string): Promise<void> {
     const decoded = this.verifyAccessToken(token)
 
@@ -175,7 +164,6 @@ export const tokenService = {
     await blackListRepository.add(token, expiresAt)
   },
 
-  // função para verificar se um token de acesso está na blacklist.
   async isBlacklisted(token: string): Promise<boolean> {
     return blackListRepository.exists(token)
   }

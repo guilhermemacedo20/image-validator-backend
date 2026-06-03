@@ -12,7 +12,6 @@ const transporter = nodemailer.createTransport({
   }
 })
 
-// função para enviar um email de recuperação de senha para um usuário, contendo um link com um token de reset.
 export async function sendResetEmail(
   email: string,
   token: string

@@ -1,7 +1,6 @@
 import type { Request, Response, NextFunction } from 'express'
 import { tokenService } from '../../modules/auth/token.service.js'
 
-// middleware para autenticação de usuários usando tokens JWT, verificando a validade do token e se ele não está na blacklist, e anexando os dados do usuário decodificados à requisição para uso em rotas protegidas.
 export const authMiddleware = async (
   req: Request,
   res: Response,

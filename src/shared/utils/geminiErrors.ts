@@ -1,4 +1,3 @@
-// Função para extrair mensagens de erro de respostas da API Gemini e retornar mensagens de erro amigáveis para o usuário, identificando erros comuns como chave de API inválida, limite de uso excedido, requisição inválida, acesso bloqueado e erros internos da API.
 export function getGeminiErrorMessage(error: any): string {
   const rawMessage = [
     error?.message,

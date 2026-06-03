@@ -1,6 +1,5 @@
 import mongoose, { Schema, type InferSchemaType } from 'mongoose'
 
-// definição do esquema para os refresh tokens no banco de dados.
 const refreshTokenSchema = new Schema(
   {
     user_id: {

@@ -19,7 +19,7 @@ const aiLimiter = rateLimit({
     error: 'Limite de análises atingido. Aguarde 1 minuto.'
   }
 })
-// rota para análise de imagens usando a API do Gemini, protegida por autenticação e limitação de taxa.
+
 router.post(
   '/analyze-image',
   authMiddleware,

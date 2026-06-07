@@ -1,0 +1,388 @@
+import { authService } from '../services/authService.js'
+import { twoFactorService } from '../services/twoFactorService.js'
+import { userRepository } from '../repositories/userRepository.js'
+import { logService } from '../services/logService.js'
+import { decrypt } from '../utils/crypto.js'
+import { authRepository } from '../repositories/authRepository.js'
+
+function isValidPhone(value) {
+  return /^\d{10,11}$/.test(String(value || '').replace(/\D/g, ''))
+}
+
+function serializeUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.first_name || '',
+    lastName: user.last_name || '',
+    phone: decrypt(user.phone),
+    address: decrypt(user.address),
+    twoFactorEnabled: Boolean(user.two_factor_enabled),
+    consent: Boolean(user.consent),
+    consentDate: user.consent_date || null,
+    consentVersion: user.consent_version || null,
+    createdAt: user.created_at || null,
+  }
+}
+
+export const authController = {
+  async register(req, res) {
+    try {
+      const { email, password, consent } = req.body
+      const user = await authService.register({ email, password, consent })
+
+      await logService.write(req, {
+        userId: user.id,
+        email: user.email,
+        action: 'REGISTER_SUCCESS',
+      })
+
+      return res.status(201).json({
+        message: 'Usuário criado com sucesso',
+        user,
+      })
+    } catch (error) {
+      await logService.write(req, {
+        email: req.body?.email || null,
+        action: 'REGISTER_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async login(req, res) {
+    try {
+      const { email, password, twoFactorCode, twoFactorToken } = req.body
+      const result = await authService.login({ email, password, twoFactorCode, twoFactorToken })
+
+      if (result.requiresTwoFactor) {
+        await logService.write(req, {
+          email,
+          action: 'LOGIN_2FA_REQUIRED',
+        })
+
+        return res.status(200).json({
+          requiresTwoFactor: true,
+          twoFactorToken: result.twoFactorToken,
+          message: 'Código 2FA necessário',
+        })
+      }
+
+      await logService.write(req, {
+        userId: result.user.id,
+        email: result.user.email,
+        action: 'LOGIN_SUCCESS',
+      })
+
+      return res.status(200).json(result)
+    } catch (error) {
+      await logService.write(req, {
+        email: req.body?.email || null,
+        action: 'LOGIN_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(401).json({ error: error.message })
+    }
+  },
+
+  async refresh(req, res) {
+    try {
+      const { refreshToken } = req.body
+      const tokens = await authService.refresh(refreshToken)
+
+      await logService.write(req, {
+        action: 'REFRESH_SUCCESS',
+      })
+
+      return res.status(200).json(tokens)
+    } catch (error) {
+      await logService.write(req, {
+        action: 'REFRESH_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(401).json({ error: error.message })
+    }
+  },
+
+  async logout(req, res) {
+    try {
+      const accessToken = req.accessToken
+      const { refreshToken } = req.body
+
+      await authService.logout(accessToken, refreshToken)
+
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: 'LOGOUT_SUCCESS',
+      })
+
+      return res.status(200).json({ message: 'Logout realizado com sucesso' })
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: 'LOGOUT_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async me(req, res) {
+    try {
+      const user = await userRepository.findById(req.user.id)
+      if (!user) {
+        return res.status(404).json({ error: 'Usuário não encontrado' })
+      }
+
+      return res.status(200).json({ user: serializeUser(user) })
+    } catch {
+      return res.status(500).json({ error: 'Erro ao buscar usuário' })
+    }
+  },
+
+  async updateProfile(req, res) {
+    try {
+      const { firstName, lastName, phone, address } = req.body
+
+      if (!firstName || !lastName || !phone || !address) {
+        return res.status(400).json({ error: 'Preencha todos os campos do perfil' })
+      }
+
+      if (!isValidPhone(phone)) {
+        return res.status(400).json({ error: 'Telefone inválido' })
+      }
+
+      await userRepository.updateProfile(req.user.id, {
+        firstName: String(firstName).trim(),
+        lastName: String(lastName).trim(),
+        phone: authService.encryptProfileValue(String(phone).trim()),
+        address: authService.encryptProfileValue(String(address).trim()),
+      })
+
+      const user = await userRepository.findById(req.user.id)
+
+      await logService.write(req, {
+        userId: req.user.id,
+        email: req.user.email,
+        action: 'PROFILE_UPDATED',
+      })
+
+      return res.status(200).json({
+        message: 'Perfil atualizado com sucesso',
+        user: serializeUser(user),
+      })
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: 'PROFILE_UPDATE_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async exportData(req, res) {
+    try {
+      const user = await userRepository.findById(req.user.id)
+      if (!user) {
+        return res.status(404).json({ error: 'Usuário não encontrado' })
+      }
+
+      await logService.write(req, {
+        userId: req.user.id,
+        email: req.user.email,
+        action: 'DATA_EXPORT_SUCCESS',
+      })
+
+      return res.status(200).json({ data: serializeUser(user) })
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: 'DATA_EXPORT_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async revokeConsent(req, res) {
+    try {
+      await userRepository.updateConsent(req.user.id, {
+        consent: false,
+        consentDate: new Date().toISOString(),
+        consentVersion: '1.0',
+      })
+
+      await logService.write(req, {
+        userId: req.user.id,
+        email: req.user.email,
+        action: 'CONSENT_REVOKED',
+      })
+
+      return res.status(200).json({ message: 'Consentimento revogado com sucesso' })
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: 'CONSENT_REVOKE_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async deleteAccount(req, res) {
+    try {
+      await authRepository.revokeAllUserRefreshTokens(req.user.id)
+      await userRepository.deleteById(req.user.id)
+
+      await logService.write(req, {
+        userId: req.user.id,
+        email: req.user.email,
+        action: 'ACCOUNT_DELETED',
+      })
+
+      return res.status(200).json({ message: 'Conta excluída com sucesso' })
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: 'ACCOUNT_DELETE_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async forgotPassword(req, res) {
+    try {
+      const { email } = req.body
+      await authService.forgotPassword(email)
+
+      await logService.write(req, {
+        email,
+        action: 'PASSWORD_RESET_REQUESTED',
+      })
+
+      return res.status(200).json({
+        message: 'Se o email existir, você receberá instruções',
+      })
+    } catch (error) {
+      await logService.write(req, {
+        email: req.body?.email || null,
+        action: 'PASSWORD_RESET_REQUEST_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async resetPassword(req, res) {
+    try {
+      const { token, newPassword } = req.body
+      await authService.resetPassword(token, newPassword)
+
+      await logService.write(req, {
+        action: 'PASSWORD_RESET_SUCCESS',
+      })
+
+      return res.status(200).json({ message: 'Senha alterada com sucesso' })
+    } catch (error) {
+      await logService.write(req, {
+        action: 'PASSWORD_RESET_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async setup2FA(req, res) {
+    try {
+      const user = await userRepository.findById(req.user.id)
+      if (!user) {
+        return res.status(404).json({ error: 'Usuário não encontrado' })
+      }
+
+      const setup = await twoFactorService.setup(user)
+
+      await logService.write(req, {
+        userId: user.id,
+        email: user.email,
+        action: '2FA_SETUP_STARTED',
+      })
+
+      return res.status(200).json(setup)
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: '2FA_SETUP_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async confirm2FA(req, res) {
+    try {
+      const { token } = req.body
+      await twoFactorService.confirmActivation(req.user.id, token)
+
+      await logService.write(req, {
+        userId: req.user.id,
+        email: req.user.email,
+        action: '2FA_ENABLED',
+      })
+
+      return res.status(200).json({ message: '2FA ativado com sucesso' })
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: '2FA_ENABLE_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+
+  async disable2FA(req, res) {
+    try {
+      await twoFactorService.disable(req.user.id)
+
+      await logService.write(req, {
+        userId: req.user.id,
+        email: req.user.email,
+        action: '2FA_DISABLED',
+      })
+
+      return res.status(200).json({ message: '2FA desativado com sucesso' })
+    } catch (error) {
+      await logService.write(req, {
+        userId: req.user?.id || null,
+        email: req.user?.email || null,
+        action: '2FA_DISABLE_FAILED',
+        metadata: { reason: error.message },
+      })
+
+      return res.status(400).json({ error: error.message })
+    }
+  },
+}

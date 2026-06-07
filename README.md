@@ -1,4 +1,4 @@
-# Secure Image Validator — Backend API
+# 🔐 Secure Image Validator — Backend API
 
 ## 📌 Visão Geral
 
@@ -23,8 +23,8 @@ Garantir um ambiente seguro para:
 
 A aplicação segue um padrão baseado em camadas:
 
-```txt
-Route -> Controller -> Service -> Repository -> Model/Database
+```
+Controller → Service → Repository → Database
 ```
 
 * **Controller:** Entrada das requisições
@@ -88,121 +88,99 @@ src/
 
 ## 🔑 Variáveis de Ambiente
 
-Crie um arquivo `.env` baseado no `.env.example`:
+Crie um arquivo `.env`:
 
-```env
-PORT=3000
-NODE_ENV=development
+```
+PORT=
 JWT_SECRET=
 JWT_REFRESH_SECRET=
-ACCESS_TOKEN_EXPIRES_IN=15m
-REFRESH_TOKEN_EXPIRES_IN=7d
-BCRYPT_ROUNDS=12
-EMAIL_USER=
-EMAIL_PASS=
-FRONT_URL=http://localhost:5173
-SECRET_KEY=
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-flash-latest
-MONGODB_URI=
+ACCESS_TOKEN_EXPIRES_IN=
+REFRESH_TOKEN_EXPIRES_IN=
+BCRYPT_ROUNDS=
+CRYPTO_SECRET=
 ```
 
-## Como rodar
+---
 
-Instale as dependências:
+## ▶️ Como Rodar o Backend
 
-```bash
+### 1. Instalar dependências
+
+```
 npm install
 ```
 
-Rode em desenvolvimento:
+### 2. Rodar em desenvolvimento
 
-```bash
+```
 npm run dev
 ```
 
-Gere o build:
+---
 
-```bash
-npm run build
+## 🔗 Principais Rotas
+
+### 🔐 Autenticação
+
+* POST `/auth/register`
+* POST `/auth/login`
+* POST `/auth/refresh`
+* POST `/auth/logout`
+* GET `/auth/me`
+
+### 🔑 2FA
+
+* POST `/auth/2fa/setup`
+* POST `/auth/2fa/confirm`
+* POST `/auth/2fa/disable`
+
+### 🔁 Recuperação de senha
+
+* POST `/auth/forgot-password`
+* POST `/auth/reset-password`
+
+### 👤 LGPD
+
+* GET `/user/export`
+* POST `/user/revoke-consent`
+* DELETE `/user`
+
+---
+
+## 📊 Logs e Auditoria
+
+O sistema registra:
+
+* Login e falhas
+* Ativação de 2FA
+* Reset de senha
+* Alterações de conta
+* Revogação de consentimento
+
+---
+
+## 🧪 Testes
+
+```
+npm run test
 ```
 
-Rode em produção:
+---
 
-```bash
-npm start
-```
+## ⚠️ Segurança
 
-## Rotas principais
+* Nunca subir `.env`
+* Utilizar HTTPS em produção
+* Proteger tokens e chaves criptográficas
 
-Todas as rotas usam o prefixo `/api`.
+---
 
-### Autenticação
+## 👨‍💻 Autor
 
-```txt
-POST /api/auth/register
-POST /api/auth/login
-POST /api/auth/refresh
-POST /api/auth/logout
-GET  /api/auth/me
-```
+Projeto acadêmico focado em segurança da informação, autenticação forte e LGPD.
+Idealizado e realizado por:
 
-### 2FA
-
-```txt
-POST /api/auth/2fa/setup
-POST /api/auth/2fa/confirm
-POST /api/auth/2fa/disable
-```
-
-### Recuperação de senha
-
-```txt
-POST /api/auth/forgot-password
-POST /api/auth/reset-password
-```
-
-### Usuário/LGPD
-
-```txt
-PUT    /api/user/profile
-GET    /api/user/export
-POST   /api/user/revoke-consent
-DELETE /api/user
-```
-
-### IA
-
-```txt
-POST /api/ai/analyze-image
-```
-
-Headers:
-
-```txt
-Authorization: Bearer <access_token>
-x-gemini-api-key: <sua_api_key_do_gemini>
-```
-
-Body aceito:
-
-```json
-{
-  "image": "data:image/png;base64,..."
-}
-```
-
-ou:
-
-```json
-{
-  "imageBase64": "...",
-  "mimeType": "image/png"
-}
-```
-
-## Observações de segurança
-
-- Não suba o arquivo `.env` para o GitHub.
-- Em produção, use secrets do Render/Vercel/GitHub Actions.
-- Evite expor `GEMINI_API_KEY` fixa no frontend.
+- LUIZ EDUARDO DIAS
+- Guilherme Aires Pimenta de Macedo
+- FABRÍCIO ROCHA DE SOUZA
+- MARIANA DA ROCHA PEREIRA MOREIRA

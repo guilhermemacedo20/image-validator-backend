@@ -1,115 +1,93 @@
 # Secure Image Validator — Backend API
 
-Backend em Node.js + TypeScript para autenticação segura de usuários, 2FA, recuperação de senha, auditoria, LGPD e análise de imagens com Gemini.
+## 📌 Visão Geral
 
-## Arquitetura adotada
+O **Secure Image Validator** é uma API desenvolvida em Node.js responsável por autentação segura de usuários, análise de imagens via inteligência artificial e gerenciamento de dados conforme a LGPD.
 
-O projeto foi organizado para uma **arquitetura em camadas modularizada**.
+O sistema implementa mecanismos avançados de segurança, incluindo autenticação multifator (2FA), proteção contra ataques de força bruta e criptografia de dados sensíveis.
 
-A regra principal:
+---
+
+## 🧠 Objetivo
+
+Garantir um ambiente seguro para:
+
+* Autenticação de usuários
+* Proteção de dados sensíveis
+* Validação de imagens utilizando IA
+* Conformidade com regulamentações de privacidade (LGPD)
+
+---
+
+## 🏗️ Arquitetura
+
+A aplicação segue um padrão baseado em camadas:
 
 ```txt
 Route -> Controller -> Service -> Repository -> Model/Database
 ```
 
-Os arquivos ficam agrupados como `auth`, `users`, `ai`, `audit` e `security`.
+* **Controller:** Entrada das requisições
+* **Service:** Regras de negócio
+* **Repository:** Acesso ao banco
+* **Utils:** Criptografia e helpers
 
-## Estrutura do projeto
+---
 
-```txt
+## 🚀 Tecnologias Utilizadas
+
+* Node.js
+* Express
+* SQLite
+* JWT (Access + Refresh Token)
+* bcrypt
+* speakeasy (2FA)
+* crypto (AES-256-CBC + SHA-256)
+* express-rate-limit
+
+---
+
+## 🔐 Segurança Implementada
+
+* Hash de senha com bcrypt
+* Tokens JWT com expiração
+* Refresh token com blacklist
+* Autenticação em dois fatores (TOTP)
+* Proteção contra brute force
+* Criptografia AES para dados sensíveis
+* Tokens de reset com hash
+* Middleware HTTPS obrigatório
+
+---
+
+## ⚖️ Conformidade com LGPD
+
+* Consentimento obrigatório no cadastro
+* Registro de versão e data do consentimento
+* Revogação de consentimento
+* Exportação de dados pessoais
+* Exclusão de conta
+* Minimização de dados
+
+---
+
+## 📂 Estrutura do Projeto
+
+```
 src/
-├── app.ts
-├── server.ts
-│
-├── config/
-│   └── env.ts
-│
-├── database/
-│   └── index.ts
-│
-├── modules/
-│   ├── ai/
-│   │   ├── ai.controller.ts
-│   │   ├── ai.routes.ts
-│   │   └── ai.service.ts
-│   │
-│   ├── audit/
-│   │   ├── audit.model.ts
-│   │   ├── audit.repository.ts
-│   │   └── audit.service.ts
-│   │
-│   ├── auth/
-│   │   ├── auth.controller.ts
-│   │   ├── auth.repository.ts
-│   │   ├── auth.routes.ts
-│   │   ├── auth.service.ts
-│   │   ├── refresh-token.model.ts
-│   │   └── token.service.ts
-│   │
-│   ├── security/
-│   │   ├── black-list.repository.ts
-│   │   ├── mail.service.ts
-│   │   ├── token-blacklist.model.ts
-│   │   └── two-factor.service.ts
-│   │
-│   └── users/
-│       ├── user.controller.ts
-│       ├── user.model.ts
-│       ├── user.repository.ts
-│       └── user.routes.ts
-│
-├── routes/
-│   └── index.ts
-│
-└── shared/
-    ├── middlewares/
-    │   └── auth.middleware.ts
-    │
-    ├── types/
-    └── utils/
+ ├── controllers/
+ ├── services/
+ ├── repositories/
+ ├── middleware/
+ ├── routes/
+ ├── utils/
+ ├── database/
+ └── app.js
 ```
 
-## Responsabilidade de cada camada
+---
 
-### Routes
-
-Define os endpoints e os middlewares usados por cada rota.
-
-Exemplo:
-
-```txt
-POST /api/ai/analyze-image
-```
-
-### Controller
-
-Recebe a requisição HTTP, valida dados básicos de entrada e chama o service.
-
-Exemplo no módulo de IA: o controller lê `x-gemini-api-key`, aceita `image` ou `imageBase64` no body e normaliza imagens em formato Data URL.
-
-### Service
-
-Contém as regras de negócio.
-
-Exemplo: o `ai.service.ts` valida a API Key, imagem, MIME type, chama o Gemini e normaliza o retorno.
-
-### Repository
-
-Isola o acesso ao banco de dados.
-
-Exemplo: `user.repository.ts`, `auth.repository.ts`, `audit.repository.ts`.
-
-### Model
-
-Define os schemas do MongoDB/Mongoose.
-
-Exemplo: `user.model.ts`, `refresh-token.model.ts`, `audit.model.ts`.
-
-### Shared
-
-Guarda itens reutilizáveis por vários módulos, como middlewares, tipos globais e funções utilitárias.
-
-## Variáveis de ambiente
+## 🔑 Variáveis de Ambiente
 
 Crie um arquivo `.env` baseado no `.env.example`:
 

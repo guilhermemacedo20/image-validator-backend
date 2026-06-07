@@ -1,0 +1,3 @@
+interface BlacklistRow {
+  id: number
+}

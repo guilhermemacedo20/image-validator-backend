@@ -11,8 +11,6 @@ pnpm-debug.log*
 !.env.example
 
 # Banco local
-db.sqlite
-db.sqlite3
 *.db
 
 # Uploads

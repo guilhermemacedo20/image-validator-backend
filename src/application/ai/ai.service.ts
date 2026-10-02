@@ -14,12 +14,13 @@ function sanitizeBase64(imageBase64: string): string {
 export const aiService = {
   async analyzeImage(
     imageBase64: string,
-    mimeType: string,
-    geminiApiKey: string
+    mimeType: string
   ): Promise<AIAnalysisResult> {
+    const geminiApiKey = env.GEMINI_API_KEY
+
     if (!geminiApiKey) {
       throw new Error(
-        'API Key do Gemini não encontrada. Informe uma chave válida para continuar.'
+        'Serviço de análise indisponível. A chave do Gemini não está configurada no servidor.'
       )
     }
 

@@ -22,7 +22,7 @@ export function getGeminiErrorMessage(error: any): string {
     message.includes('invalid api key') ||
     message.includes('api key inválida')
   ) {
-    return 'API Key do Gemini inválida. Verifique se a chave informada está correta.'
+    return 'API Key do Gemini inválida. Verifique a chave configurada no servidor.'
   }
 
   if (
@@ -31,7 +31,7 @@ export function getGeminiErrorMessage(error: any): string {
       message.includes('not found') ||
       message.includes('encontrada'))
   ) {
-    return 'API Key não encontrada. Informe uma chave válida para continuar.'
+    return 'API Key do Gemini inválida ou ausente no servidor.'
   }
 
   if (message.includes('quota') || message.includes('resource_exhausted')) {

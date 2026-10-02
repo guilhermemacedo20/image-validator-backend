@@ -17,16 +17,6 @@ function normalizeImagePayload(body: any) {
   return { imageBase64, mimeType }
 }
 
-function getGeminiApiKey(req: Request): string {
-  const headerValue = req.headers['x-gemini-api-key']
-
-  if (Array.isArray(headerValue)) {
-    return headerValue[0] || ''
-  }
-
-  return headerValue || ''
-}
-
 export const aiController = {
   async analyzeImage(req: Request, res: Response) {
     try {
@@ -34,12 +24,7 @@ export const aiController = {
         return res.status(401).json({ error: 'Usuário não autenticado.' })
       }
 
-      const geminiApiKey = getGeminiApiKey(req)
       const { imageBase64, mimeType } = normalizeImagePayload(req.body)
-
-      if (!geminiApiKey) {
-        return res.status(400).json({ error: 'API Key do Gemini não declarada.' })
-      }
 
       if (!imageBase64) {
         return res.status(400).json({ error: 'Imagem não enviada.' })
@@ -49,11 +34,7 @@ export const aiController = {
         return res.status(400).json({ error: 'Tipo da imagem não informado.' })
       }
 
-      const result = await aiService.analyzeImage(
-        imageBase64,
-        mimeType,
-        geminiApiKey
-      )
+      const result = await aiService.analyzeImage(imageBase64, mimeType)
 
       return res.json(result)
     } catch (error: any) {

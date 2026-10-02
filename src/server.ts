@@ -1,10 +1,7 @@
 import app from './app.js'
-
-import { env } from './config/env.js'
-
-import { connectDatabase } from './database/index.js'
-
-import { blackListRepository } from './modules/security/black-list.repository.js'
+import { env } from './infrastructure/config/env.js'
+import { connectDatabase } from './infrastructure/database/index.js'
+import { blackListRepository } from './infrastructure/persistence/security/black-list.repository.js'
 
 async function server() {
   try {
@@ -16,7 +13,6 @@ async function server() {
     })
   } catch (error) {
     console.error('Erro ao iniciar servidor:', error)
-
     process.exit(1)
   }
 }

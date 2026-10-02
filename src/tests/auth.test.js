@@ -1,26 +1,37 @@
-import request from "supertest"
-import app from "../app.js"
+import request from 'supertest'
+import app from '../../dist/app.js'
 
-describe("Auth", () => {
-  it("should fail with wrong credentials", async () => {
-    const res = await request(app)
-      .post("/api/auth/login")
-      .send({
-        email: "wrong@test.com",
-        password: "123"
-      })
+describe('Auth HTTP', () => {
+  it('should reject register with invalid email', async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      email: 'not-an-email',
+      password: 'SenhaForte1!',
+      consent: true
+    })
 
-    expect(res.statusCode).toBeGreaterThanOrEqual(400)
+    expect(res.statusCode).toBe(400)
+    expect(res.body).toHaveProperty('error')
   })
 
-  it("should login (mock user)", async () => {
-    const res = await request(app)
-      .post("/api/auth/login")
-      .send({
-        email: "test@test.com",
-        password: "123456"
-      })
+  it('should reject register without consent', async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      email: 'newuser@test.com',
+      password: 'SenhaForte1!',
+      consent: false
+    })
 
-    expect([200, 401]).toContain(res.statusCode)
+    expect(res.statusCode).toBe(400)
+    expect(res.body.error).toMatch(/consentimento|termos|política/i)
+  })
+
+  it('should reject register with weak password', async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      email: 'weak@test.com',
+      password: '123',
+      consent: true
+    })
+
+    expect(res.statusCode).toBe(400)
+    expect(res.body).toHaveProperty('error')
   })
 })

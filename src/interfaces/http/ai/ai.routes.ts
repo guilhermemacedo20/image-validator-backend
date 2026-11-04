@@ -24,4 +24,9 @@ router.post(
   aiController.analyzeImage
 )
 
+router.get('/analyses', authMiddleware, aiController.listAnalyses)
+router.get('/analyses/stats', authMiddleware, aiController.getStats)
+router.get('/analyses/:id', authMiddleware, aiController.getAnalysis)
+router.delete('/analyses/:id', authMiddleware, aiController.deleteAnalysis)
+
 export default router

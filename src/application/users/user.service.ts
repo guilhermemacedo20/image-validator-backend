@@ -1,8 +1,10 @@
 import { toPublicUser } from '../../domain/policies/user.policies.js'
+import type { AnalysisHistoryItem } from '../../domain/types/ai.types.js'
 import type {
   PublicUser,
   UpdateProfileParams
 } from '../../domain/types/user.types.js'
+import { analysisRepository } from '../../infrastructure/persistence/analysis/analysis.repository.js'
 import { authRepository } from '../../infrastructure/persistence/auth/auth.repository.js'
 import { userRepository } from '../../infrastructure/persistence/users/user.repository.js'
 
@@ -35,8 +37,12 @@ export const userService = {
     return this.getById(userId)
   },
 
-  async exportData(userId: string): Promise<PublicUser> {
-    return this.getById(userId)
+  async exportData(
+    userId: string
+  ): Promise<PublicUser & { analyses: AnalysisHistoryItem[] }> {
+    const user = await this.getById(userId)
+    const analyses = await analysisRepository.findAllByUser(userId)
+    return { ...user, analyses }
   },
 
   async revokeConsent(userId: string): Promise<void> {
@@ -48,6 +54,7 @@ export const userService = {
 
   async deleteAccount(userId: string): Promise<void> {
     await authRepository.revokeAllUserRefreshTokens(userId)
+    await analysisRepository.deleteAllByUser(userId)
     await userRepository.deleteById(userId)
   }
 }

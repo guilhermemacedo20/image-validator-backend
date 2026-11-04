@@ -1,103 +1,124 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { createHash } from 'node:crypto'
 
+import {
+  ALLOWED_IMAGE_MIME_TYPES,
+  MAX_IMAGE_BYTES,
+  normalizeAnalysis,
+  parseModelJson
+} from '../../domain/policies/ai.policies.js'
 import type {
   AIAnalysisResult,
-  GeminiResponse
+  AnalyzeImageInput
 } from '../../domain/types/ai.types.js'
+import { geminiImageClient } from '../../infrastructure/ai/gemini.client.js'
 import { getGeminiErrorMessage } from '../../infrastructure/ai/geminiErrors.js'
-import { env } from '../../infrastructure/config/env.js'
+import {
+  detectImageFormat,
+  extractImageMetadata
+} from '../../infrastructure/ai/imageMetadata.js'
+import { analysisRepository } from '../../infrastructure/persistence/analysis/analysis.repository.js'
+import { buildImageAnalysisPrompt } from './prompts/imageAnalysis.prompt.js'
+
+export class AnalysisValidationError extends Error {}
+
+const FORMAT_TO_MIME: Record<string, string> = {
+  JPEG: 'image/jpeg',
+  PNG: 'image/png',
+  WEBP: 'image/webp',
+  HEIC: 'image/heic'
+}
 
 function sanitizeBase64(imageBase64: string): string {
   return imageBase64.replace(/^data:.+;base64,/, '').trim()
 }
 
-export const aiService = {
-  async analyzeImage(
-    imageBase64: string,
-    mimeType: string
-  ): Promise<AIAnalysisResult> {
-    const geminiApiKey = env.GEMINI_API_KEY
+function sanitizeFileName(fileName?: string | null): string | null {
+  if (!fileName) return null
+  const base = String(fileName).split(/[\\/]/).pop() ?? ''
+  const clean = base.replace(/[\u0000-\u001f]/g, '').trim()
+  return clean ? clean.slice(0, 120) : null
+}
 
-    if (!geminiApiKey) {
-      throw new Error(
-        'Serviço de análise indisponível. A chave do Gemini não está configurada no servidor.'
+export const aiService = {
+  async analyzeImage(input: AnalyzeImageInput): Promise<AIAnalysisResult> {
+    if (!input.geminiApiKey) {
+      throw new AnalysisValidationError(
+        'API Key do Gemini não encontrada. Informe uma chave válida para continuar.'
       )
     }
 
-    if (!imageBase64) {
-      throw new Error('Imagem não enviada.')
+    const base64 = sanitizeBase64(input.imageBase64 || '')
+    if (!base64) throw new AnalysisValidationError('Imagem não enviada.')
+
+    const buffer = Buffer.from(base64, 'base64')
+    if (buffer.length === 0)
+      throw new AnalysisValidationError('Imagem inválida.')
+    if (buffer.length > MAX_IMAGE_BYTES) {
+      throw new AnalysisValidationError('A imagem excede o limite de 7 MB.')
     }
 
-    if (!mimeType) {
-      throw new Error('Tipo da imagem não informado.')
+    const detectedMime = FORMAT_TO_MIME[detectImageFormat(buffer)]
+    if (!detectedMime) {
+      throw new AnalysisValidationError(
+        'Formato não suportado. Envie PNG, JPG, WEBP ou HEIC.'
+      )
     }
+    const declaredMime = (input.mimeType || '').toLowerCase()
+    const mimeType = (ALLOWED_IMAGE_MIME_TYPES as readonly string[]).includes(
+      declaredMime
+    )
+      ? declaredMime
+      : detectedMime
 
+    const metadata = extractImageMetadata(buffer)
+    const prompt = buildImageAnalysisPrompt(metadata)
+    const startedAt = Date.now()
+
+    let rawText: string
     try {
-      const genAI = new GoogleGenerativeAI(geminiApiKey)
-
-      const model = genAI.getGenerativeModel({
-        model: env.GEMINI_MODEL,
-        generationConfig: {
-          responseMimeType: 'application/json'
-        }
-      })
-
-      const prompt = `
-        Analise a imagem e responda SOMENTE com JSON puro.
-
-        Responda o score de acordo com a confiabilidade de que a imagem pode ter sido gerada por IA ou ser real.
-        Além disso, valide a possibilidade de ser uma edição de imagem feita por humano.
-        As razões devem considerar se foi gerada por IA, se é real ou se há indícios de edição humana.
-
-        {
-          "scoreIa": number,
-          "scoreReal": number,
-          "isAIGenerated": boolean,
-          "reasons": string[]
-        }
-
-        Critérios:
-        - anatomia
-        - iluminação
-        - textura
-        - artefatos
-        - padrões repetitivos
-        - inconsistências visuais
-        - sinais de edição humana
-      `
-
-      const result = await model.generateContent([
+      rawText = await geminiImageClient.generate({
+        apiKey: input.geminiApiKey,
         prompt,
-        {
-          inlineData: {
-            mimeType,
-            data: sanitizeBase64(imageBase64)
-          }
-        }
-      ])
-
-      const text = result.response.text()
-
-      let parsed: GeminiResponse
-
-      try {
-        parsed = JSON.parse(text) as GeminiResponse
-      } catch {
-        parsed = {
-          scoreIa: 0,
-          scoreReal: 0,
-          isAIGenerated: false,
-          reasons: ['Erro ao interpretar resposta do Gemini']
-        }
-      }
-
-      return {
-        provider: 'gemini',
-        ...parsed
-      }
+        imageBase64: base64,
+        mimeType
+      })
     } catch (error: any) {
-      console.error('Erro Gemini:', { message: error })
+      console.error('Erro Gemini:', { message: error?.message })
       throw new Error(getGeminiErrorMessage(error))
     }
+
+    const raw = parseModelJson(rawText)
+    if (!raw) {
+      throw new Error(
+        'Não foi possível interpretar a resposta da IA. Tente novamente.'
+      )
+    }
+
+    const result = normalizeAnalysis(raw, metadata, {
+      provider: 'gemini',
+      model: geminiImageClient.modelName,
+      durationMs: Date.now() - startedAt,
+      analyzedAt: new Date()
+    })
+
+    if (analysisRepository.isAvailable()) {
+      try {
+        const saved = await analysisRepository.create({
+          userId: input.userId,
+          fileName: sanitizeFileName(input.fileName),
+          mimeType,
+          sizeBytes: buffer.length,
+          imageHash: createHash('sha256').update(buffer).digest('hex'),
+          result
+        })
+        result.id = saved.id
+      } catch (error: any) {
+        console.error('Falha ao salvar histórico de análise:', {
+          message: error?.message
+        })
+      }
+    }
+
+    return result
   }
 }

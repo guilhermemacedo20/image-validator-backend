@@ -1,8 +1,8 @@
-# Secure Image Validator — Backend API
+# Secure Image Validator - Backend API
 
 Backend em Node.js + TypeScript para autenticação segura, 2FA, LGPD e análise de imagens com Gemini (PFC de Engenharia de Software).
 
-Arquitetura: **monólito com camadas Domain / Application / Infrastructure** — detalhes em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+Arquitetura: **monólito com camadas Domain / Application / Infrastructure** - detalhes em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ## Separação principal
 

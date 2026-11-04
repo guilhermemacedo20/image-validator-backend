@@ -1,4 +1,4 @@
-# Arquitetura do Backend — Secure Image Validator
+# Arquitetura do Backend - Secure Image Validator
 
 Documento de decisão arquitetural do PFC de Engenharia de Software.
 
@@ -6,10 +6,10 @@ Documento de decisão arquitetural do PFC de Engenharia de Software.
 
 O backend é um **monólito modular** com **separação clara em camadas**:
 
-1. **Domain** — regras de negócio  
-2. **Application** — casos de uso / orquestração  
-3. **Infrastructure** — banco de dados e integrações externas  
-4. **Interfaces (HTTP)** — entrada da API (não mistura regra nem persistência)
+1. **Domain** - regras de negócio  
+2. **Application** - casos de uso / orquestração  
+3. **Infrastructure** - banco de dados e integrações externas  
+4. **Interfaces (HTTP)** - entrada da API (não mistura regra nem persistência)
 
 Isso NÃO é espelho do frontend: é a separação clássica pedida em Engenharia de Software (regras × aplicação × dados).
 
@@ -21,13 +21,6 @@ Isso NÃO é espelho do frontend: é a separação clássica pedida em Engenhari
 | **Application** | *Como* orquestrar um caso de uso? (login chama validação + repositório + token + 2FA) |
 | **Infrastructure** | *Onde* persiste e *com o que* se integra? (Mongo/Mongoose, Gemini, e-mail, crypto) |
 | **HTTP** | *Como* o mundo externo chama? (rotas, status code, headers) |
-
-Benefícios para o TCC:
-
-- muda o banco sem reescrever regra de negócio;
-- testa políticas sem subir Mongo/Gemini;
-- controllers finos — sem lógica de senha ou LGPD embutida no HTTP;
-- discurso alinhado a Clean Architecture / layered architecture, ainda em um monólito.
 
 ## Estrutura
 

@@ -14,6 +14,7 @@ import type {
 export const VERDICT_THRESHOLDS = {
   AI_MIN: 65,
   REAL_MAX: 35,
+  REAL_WITHOUT_METADATA_MAX: 15,
   EDIT_MIN: 60
 } as const
 
@@ -107,6 +108,18 @@ export function decideVerdict(
   return 'INCONCLUSIVE'
 }
 
+export function hasNoMetadata(metadata: ImageMetadataSummary): boolean {
+  return (
+    !metadata.hasExif &&
+    !metadata.software &&
+    !metadata.cameraMake &&
+    !metadata.cameraModel &&
+    !metadata.hasContentCredentials &&
+    !metadata.aiGeneratorHint &&
+    !metadata.editingSoftwareHint
+  )
+}
+
 export function deriveConfidence(scoreIa: number): AnalysisConfidence {
   const distance = Math.abs(scoreIa - 50)
   if (distance >= 35) return 'ALTA'
@@ -172,6 +185,9 @@ const DEFAULT_SUMMARY: Record<AnalysisVerdict, string> = {
     'Não há evidências suficientes para afirmar se a imagem é real ou gerada por IA.'
 }
 
+const UNCONFIRMED_REAL_SUMMARY =
+  'Não encontramos sinais claros de IA, mas a imagem não tem metadados para confirmar a origem (comum em prints e fotos enviadas por apps de mensagem). Sem eles, a análise fica só no visual e pode errar. Se puder, envie o arquivo original.'
+
 export function normalizeAnalysis(
   raw: GeminiResponse,
   metadata: ImageMetadataSummary,
@@ -201,6 +217,8 @@ export function normalizeAnalysis(
   let scoreEdicao = clampScore(raw.scoreEdicao) ?? 0
   const indicators = sanitizeIndicators(raw.indicators ?? raw.reasons)
 
+  const visualScoreIa = scoreIa
+
   if (metadata.aiGeneratorHint) {
     scoreIa = Math.max(scoreIa, 90)
     scoreReal = 100 - scoreIa
@@ -222,7 +240,15 @@ export function normalizeAnalysis(
     })
   }
 
-  const verdict = decideVerdict(scoreIa, scoreEdicao)
+  let verdict = decideVerdict(scoreIa, scoreEdicao)
+  const unconfirmedReal =
+    verdict === 'REAL' &&
+    hasNoMetadata(metadata) &&
+    scoreIa > VERDICT_THRESHOLDS.REAL_WITHOUT_METADATA_MAX
+  if (unconfirmedReal) verdict = 'INCONCLUSIVE'
+  const metadataOverride =
+    Boolean(metadata.aiGeneratorHint) &&
+    visualScoreIa < VERDICT_THRESHOLDS.AI_MIN
   const modelConfidence = pickEnum<AnalysisConfidence | ''>(
     raw.confidence,
     CONFIDENCES,
@@ -246,7 +272,11 @@ export function normalizeAnalysis(
     scoreReal,
     scoreEdicao,
     isAIGenerated: verdict === 'AI_GENERATED',
-    summary: cleanText(raw.summary, 400) || DEFAULT_SUMMARY[verdict],
+    summary: unconfirmedReal
+      ? UNCONFIRMED_REAL_SUMMARY
+      : metadataOverride
+        ? `Os metadados do arquivo mostram que a imagem foi criada por IA (${metadata.aiGeneratorHint}), mesmo sem erros fáceis de ver na imagem.`
+        : cleanText(raw.summary, 400) || DEFAULT_SUMMARY[verdict],
     reasons: finalIndicators.map((i) => i.description),
     indicators: finalIndicators,
     metadata,

@@ -17,5 +17,7 @@ export const env = {
     process.env.FRONT_URL || 'https://image-validator-frontend-cyan.vercel.app',
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   MONGODB_URI: process.env.MONGODB_URI || '',
-  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-flash-latest'
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-flash-latest',
+  SIGHTENGINE_API_USER: process.env.SIGHTENGINE_API_USER || '',
+  SIGHTENGINE_API_SECRET: process.env.SIGHTENGINE_API_SECRET || ''
 }

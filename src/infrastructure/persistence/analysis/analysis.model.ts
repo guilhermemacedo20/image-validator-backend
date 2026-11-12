@@ -32,6 +32,8 @@ const analysisSchema = new Schema(
     score_ia: { type: Number, required: true },
     score_real: { type: Number, required: true },
     score_edicao: { type: Number, required: true },
+    visual_score_ia: { type: Number, default: null },
+    detector: { type: Schema.Types.Mixed, default: null },
     summary: { type: String, default: '' },
     indicators: { type: [indicatorSchema], default: [] },
     metadata: { type: Schema.Types.Mixed, default: null },

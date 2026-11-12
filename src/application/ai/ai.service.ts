@@ -8,10 +8,12 @@ import {
 } from '../../domain/policies/ai.policies.js'
 import type {
   AIAnalysisResult,
-  AnalyzeImageInput
+  AnalyzeImageInput,
+  DetectorResult
 } from '../../domain/types/ai.types.js'
 import { geminiImageClient } from '../../infrastructure/ai/gemini.client.js'
 import { getGeminiErrorMessage } from '../../infrastructure/ai/geminiErrors.js'
+import { sightengineClient } from '../../infrastructure/ai/sightengine.client.js'
 import {
   detectImageFormat,
   extractImageMetadata
@@ -37,6 +39,23 @@ function sanitizeFileName(fileName?: string | null): string | null {
   const base = String(fileName).split(/[\\/]/).pop() ?? ''
   const clean = base.replace(/[\u0000-\u001f]/g, '').trim()
   return clean ? clean.slice(0, 120) : null
+}
+
+async function runDetector(
+  buffer: Buffer,
+  mimeType: string
+): Promise<DetectorResult | null> {
+  if (!sightengineClient.isConfigured()) return null
+
+  try {
+    const detection = await sightengineClient.detect(buffer, mimeType)
+    return { provider: sightengineClient.providerName, ...detection }
+  } catch (error: any) {
+    console.error('Falha no Sightengine, seguindo só com o Gemini:', {
+      message: error?.message
+    })
+    return null
+  }
 }
 
 export const aiService = {
@@ -74,6 +93,8 @@ export const aiService = {
     const prompt = buildImageAnalysisPrompt(metadata)
     const startedAt = Date.now()
 
+    const detectorPromise = runDetector(buffer, mimeType)
+
     let rawText: string
     try {
       rawText = await geminiImageClient.generate({
@@ -94,12 +115,19 @@ export const aiService = {
       )
     }
 
-    const result = normalizeAnalysis(raw, metadata, {
-      provider: 'gemini',
-      model: geminiImageClient.modelName,
-      durationMs: Date.now() - startedAt,
-      analyzedAt: new Date()
-    })
+    const detector = await detectorPromise
+
+    const result = normalizeAnalysis(
+      raw,
+      metadata,
+      {
+        provider: detector ? 'sightengine+gemini' : 'gemini',
+        model: geminiImageClient.modelName,
+        durationMs: Date.now() - startedAt,
+        analyzedAt: new Date()
+      },
+      detector
+    )
 
     if (analysisRepository.isAvailable()) {
       try {

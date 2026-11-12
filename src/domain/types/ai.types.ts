@@ -39,6 +39,12 @@ export interface ImageMetadataSummary {
   editingSoftwareHint: string | null
 }
 
+export interface DetectorResult {
+  provider: string
+  scoreIa: number
+  topGenerator: string | null
+}
+
 export interface AIAnalysisResult {
   id?: string
   provider: string
@@ -48,6 +54,8 @@ export interface AIAnalysisResult {
   scoreIa: number
   scoreReal: number
   scoreEdicao: number
+  visualScoreIa: number
+  detector: DetectorResult | null
   isAIGenerated: boolean
   summary: string
   reasons: string[]

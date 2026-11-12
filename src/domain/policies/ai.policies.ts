@@ -4,6 +4,7 @@ import type {
   AnalysisIndicator,
   AnalysisVerdict,
   DailyAnalysisCount,
+  DetectorResult,
   GeminiResponse,
   ImageMetadataSummary,
   IndicatorCategory,
@@ -188,6 +189,25 @@ const DEFAULT_SUMMARY: Record<AnalysisVerdict, string> = {
 const UNCONFIRMED_REAL_SUMMARY =
   'Não encontramos sinais claros de IA, mas a imagem não tem metadados para confirmar a origem (comum em prints e fotos enviadas por apps de mensagem). Sem eles, a análise fica só no visual e pode errar. Se puder, envie o arquivo original.'
 
+export const DETECTOR_POLICY = {
+  WEIGHT: 0.7,
+  STRONG_AI: 90,
+  STRONG_REAL: 10
+} as const
+
+const DETECTOR_CONFLICT_SUMMARY =
+  'O detector especializado e a análise visual chegaram a conclusões diferentes. Por segurança, o resultado fica inconclusivo: confira a origem da imagem antes de compartilhar.'
+
+function detectorSummary(verdict: AnalysisVerdict, detectorScore: number): string {
+  if (verdict === 'AI_GENERATED') {
+    return `O detector especializado encontrou padrões de IA nos pixels da imagem (${detectorScore}%), mesmo sem erros fáceis de ver.`
+  }
+  if (verdict === 'REAL') {
+    return `O detector especializado não encontrou padrões de IA na imagem (${detectorScore}%), e ela tem características de uma foto real.`
+  }
+  return DEFAULT_SUMMARY[verdict]
+}
+
 export function normalizeAnalysis(
   raw: GeminiResponse,
   metadata: ImageMetadataSummary,
@@ -196,7 +216,8 @@ export function normalizeAnalysis(
     model: string
     durationMs: number
     analyzedAt: Date
-  }
+  },
+  detector: DetectorResult | null = null
 ): AIAnalysisResult {
   let scoreIa = clampScore(raw.scoreIa)
   let scoreReal = clampScore(raw.scoreReal)
@@ -218,6 +239,42 @@ export function normalizeAnalysis(
   const indicators = sanitizeIndicators(raw.indicators ?? raw.reasons)
 
   const visualScoreIa = scoreIa
+  let detectorConflict = false
+
+  if (detector) {
+    const detectorScore = detector.scoreIa
+    const detectorStrong =
+      detectorScore >= DETECTOR_POLICY.STRONG_AI ||
+      detectorScore <= DETECTOR_POLICY.STRONG_REAL
+
+    scoreIa = Math.round(
+      detectorScore * DETECTOR_POLICY.WEIGHT +
+        visualScoreIa * (1 - DETECTOR_POLICY.WEIGHT)
+    )
+    if (detectorScore >= DETECTOR_POLICY.STRONG_AI) {
+      scoreIa = Math.max(scoreIa, VERDICT_THRESHOLDS.AI_MIN)
+    }
+    if (detectorScore <= DETECTOR_POLICY.STRONG_REAL) {
+      scoreIa = Math.min(scoreIa, VERDICT_THRESHOLDS.REAL_MAX)
+    }
+    scoreReal = 100 - scoreIa
+
+    detectorConflict =
+      !detectorStrong &&
+      ((detectorScore >= VERDICT_THRESHOLDS.AI_MIN &&
+        visualScoreIa <= VERDICT_THRESHOLDS.REAL_MAX) ||
+        (detectorScore <= VERDICT_THRESHOLDS.REAL_MAX &&
+          visualScoreIa >= VERDICT_THRESHOLDS.AI_MIN))
+
+    indicators.unshift({
+      category: 'OUTRO',
+      direction: detectorScore >= 50 ? 'IA' : 'REAL',
+      weight: detectorStrong ? 'ALTO' : 'MEDIO',
+      description: `O detector especializado (${detector.provider}) estimou ${detectorScore}% de chance de a imagem ter sido gerada por IA${detector.topGenerator ? `, com traços de ${detector.topGenerator}` : ''}.`
+    })
+  }
+
+  const preMetadataScoreIa = scoreIa
 
   if (metadata.aiGeneratorHint) {
     scoreIa = Math.max(scoreIa, 90)
@@ -241,25 +298,46 @@ export function normalizeAnalysis(
   }
 
   let verdict = decideVerdict(scoreIa, scoreEdicao)
+  const conflictInconclusive = detectorConflict && !metadata.aiGeneratorHint
+  if (conflictInconclusive) verdict = 'INCONCLUSIVE'
+
   const unconfirmedReal =
+    !detector &&
     verdict === 'REAL' &&
     hasNoMetadata(metadata) &&
     scoreIa > VERDICT_THRESHOLDS.REAL_WITHOUT_METADATA_MAX
   if (unconfirmedReal) verdict = 'INCONCLUSIVE'
+
   const metadataOverride =
     Boolean(metadata.aiGeneratorHint) &&
-    visualScoreIa < VERDICT_THRESHOLDS.AI_MIN
+    preMetadataScoreIa < VERDICT_THRESHOLDS.AI_MIN
+
+  const geminiVerdict = decideVerdict(visualScoreIa, scoreEdicao)
+  const detectorChangedVerdict = Boolean(detector) && geminiVerdict !== verdict
+
+  const derived = deriveConfidence(scoreIa)
   const modelConfidence = pickEnum<AnalysisConfidence | ''>(
     raw.confidence,
     CONFIDENCES,
     ''
   )
-  const derived = deriveConfidence(scoreIa)
   const confidence: AnalysisConfidence =
+    !detector &&
     modelConfidence &&
     CONFIDENCES.indexOf(modelConfidence) < CONFIDENCES.indexOf(derived)
       ? modelConfidence
       : derived
+
+  let summary = cleanText(raw.summary, 400) || DEFAULT_SUMMARY[verdict]
+  if (unconfirmedReal) {
+    summary = UNCONFIRMED_REAL_SUMMARY
+  } else if (metadataOverride) {
+    summary = `Os metadados do arquivo mostram que a imagem foi criada por IA (${metadata.aiGeneratorHint}), mesmo sem erros fáceis de ver na imagem.`
+  } else if (conflictInconclusive) {
+    summary = DETECTOR_CONFLICT_SUMMARY
+  } else if (detector && detectorChangedVerdict) {
+    summary = detectorSummary(verdict, detector.scoreIa)
+  }
 
   const finalIndicators = indicators.slice(0, MAX_INDICATORS)
 
@@ -271,12 +349,10 @@ export function normalizeAnalysis(
     scoreIa,
     scoreReal,
     scoreEdicao,
+    visualScoreIa,
+    detector,
     isAIGenerated: verdict === 'AI_GENERATED',
-    summary: unconfirmedReal
-      ? UNCONFIRMED_REAL_SUMMARY
-      : metadataOverride
-        ? `Os metadados do arquivo mostram que a imagem foi criada por IA (${metadata.aiGeneratorHint}), mesmo sem erros fáceis de ver na imagem.`
-        : cleanText(raw.summary, 400) || DEFAULT_SUMMARY[verdict],
+    summary,
     reasons: finalIndicators.map((i) => i.description),
     indicators: finalIndicators,
     metadata,
